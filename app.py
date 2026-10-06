@@ -5,13 +5,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from reportlab.graphics.shapes import Drawing, Rect, Polygon, Circle, Line
+from reportlab.graphics.shapes import Drawing, Rect, Polygon, Circle, Line, String
 from google import genai
 import time
 import io
 import os
 import re
-import base64
 
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
@@ -51,7 +50,7 @@ modelo_escolhido = st.sidebar.radio(
 foto_arquivo = None
 if modelo_escolhido == "Modelo Com Foto":
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🖼️ Foto do Candidato")
+    st.sidebar.markdown("### 🖼️️ Foto do Candidato")
     foto_arquivo = st.sidebar.file_uploader("Carregue a foto (JPG ou PNG)", type=["jpg", "jpeg", "png"])
 
 ativa_api_key = st.session_state.get("api_key", "")
@@ -72,11 +71,11 @@ with col2:
 
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
-        'gemini-3.8-flash', 
-        'gemini-3.7-flash', 
-        'gemini-3.6-flash', 
-        'gemini-3.5-flash', 
-        'gemini-3.1-pro'
+        'gemini-2.5-flash', 
+        'gemini-2.5-pro', 
+        'gemini-2.5-flash-lite', 
+        'gemini-1.5-flash', 
+        'gemini-1.5-pro'
     ]
     
     erros_acumulados = []
@@ -230,7 +229,7 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Funções para gerar os ícones de casa, telefone e e-mail
+    # Funções para gerar os ícones vetoriais perfeitos e estáveis
     def criar_icone_casa():
         d = Drawing(13, 12)
         d.add(Polygon([0, 4.5, 6.5, 0, 13, 4.5], fillColor=colors.black, strokeColor=colors.black))
@@ -250,13 +249,11 @@ if "curriculo_gerado" in st.session_state:
         d.add(Line(6.5, 4.5, 11.5, 9, strokeColor=colors.white, strokeWidth=1.5))
         return d
 
-    # Ícone exato do LinkedIn embutido automaticamente via string base64
-    linkedin_base64 = "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmFAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAGxSURBVGhD7dgxTsNAEAbgf3uQkBCiJAoKNwV1XIFL0FIpUfAANVzAFXgC11ABQdEhcAkFBVwFCeEQlH1vY3G89mP8pdkS//bH6+yuvt0qA4z+Z0wB2q0H93kANWv9HhR00P14vXfD+2289c8tFpP67s8Z2234P20439y7+4vI30qI3t51B78O2L18O3r75vN21N0OaGz0Oxtz7A6tH233c4uNl4Dtrb3/u/Z3tA47W28n7u+62a98DttY/j1wF70eL17/fV1Vn+7W8B29v3Azt0FtuZuvsMftnfb9bS3M1pftvfa2e93Gz9n/v2z7d1F/tM3f1r305c/7f2+Xv51L9bX393bM//4jQ9e9j9D7wPbu4fXg7x78A/fDvvbF1rF92d3Yn9r4jftD3Z/vV263889M8wP24N9bF98gW06sM39c8gfvHnF29t36b9c9M/wL3127C7/r3x717+P3n313Y398gW38wDvvL9Nf69D7z/tA43Xf78/Tf74P2D8Af78E56o242AAAAAElFTkSuQmCC"
-    
-    temp_lk_path = "temp_linkedin_auto.png"
-    with open(temp_lk_path, "wb") as f:
-        f.write(base64.b64decode(linkedin_base64))
-    icone_linkedin_obj = RLImage(temp_lk_path, width=11, height=11)
+    def criar_icone_linkedin():
+        d = Drawing(13, 13)
+        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
+        d.add(String(2.5, 3, "in", fontName="Helvetica-Bold", fontSize=9, fillColor=colors.white))
+        return d
 
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
@@ -274,7 +271,7 @@ if "curriculo_gerado" in st.session_state:
         [Paragraph(cidade_bairro, estilo_contato_dir), criar_icone_casa()],
         [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
         [Paragraph(email, estilo_contato_dir), criar_icone_email()],
-        [Paragraph(linkedin, estilo_contato_dir), icone_linkedin_obj]
+        [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
     ], colWidths=[170, 25])
     
     tabela_contatos_direita.setStyle(TableStyle([
@@ -356,8 +353,6 @@ if "curriculo_gerado" in st.session_state:
 
     if os.path.exists("temp_foto.png"):
         os.remove("temp_foto.png")
-    if os.path.exists("temp_linkedin_auto.png"):
-        os.remove("temp_linkedin_auto.png")
 
     col_d1, col_d2 = st.columns(2)
     with col_d1:
