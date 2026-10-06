@@ -17,7 +17,6 @@ st.markdown("Ferramenta automatizada para otimização de currículos alinhada a
 # --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
 st.sidebar.header("🔑 Configuração da API")
 
-# Tenta carregar a chave automaticamente dos segredos do Streamlit se existir
 default_api_key = ""
 try:
     if "GEMINI_API_KEY" in st.secrets:
@@ -25,7 +24,6 @@ try:
 except Exception:
     pass
 
-# Se já houver chave salva na sessão, usa ela como padrão para não precisar redigitar
 if "api_key" in st.session_state and st.session_state["api_key"]:
     default_api_key = st.session_state["api_key"]
 
@@ -33,7 +31,7 @@ api_key_input = st.sidebar.text_input(
     "Insira sua Google Gemini API Key", 
     value=default_api_key, 
     type="password",
-    help="Cole aqui a sua chave do Google AI Studio (começa com AQ... ou AIza...)"
+    help="Cole aqui a sua chave do Google AI Studio"
 )
 
 if api_key_input:
@@ -54,20 +52,22 @@ col1, col2 = st.columns(2)
 with col1:
     st.subheader("1️⃣ Dados do Candidato e Vaga")
     curriculo_antigo = st.text_area("Cole o Currículo Atual do Cliente:", height=200, placeholder="Cole aqui o texto do currículo antigo...")
-    descricao_vaga = st.text_area("Cole a Descrição da Vaga ou Palavras-Chave:", height=150, placeholder="Cole a descrição da vaga do Vagas.com, LinkedIn ou Gupy...")
+    descricao_vaga = st.text_area("Cole a Descrição da Vaga ou Palavras-Chave:", height=150, placeholder="Cole a descrição da vaga...")
 
 with col2:
     st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema vai reestruturar o perfil profissional em 3 parágrafos, ajustar as experiências em tópicos neutros baseados na vaga e organizar a formação e cursos conforme as normas da consultoria[cite: 4, 5].")
+    st.info("O sistema vai reestruturar o perfil profissional em 3 parágrafos, ajustar as experiências em tópicos neutros baseados na vaga e organizar a formação e cursos conforme as normas da consultoria.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# Função para chamar o Gemini com tentativas automáticas (evita erros 503)
+# Função para chamar o Gemini com os modelos atualizados e retry
 def chamar_gemini_com_retry(client, prompt_texto):
-    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    # Modelos atualizados compatíveis com a biblioteca moderna do Gemini
+    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
     
+    erros_acumulados = []
     for modelo in modelos_para_tentar:
-        for tentativa in range(3):
+        for tentativa in range(2):
             try:
                 response = client.models.generate_content(
                     model=modelo,
@@ -76,35 +76,36 @@ def chamar_gemini_com_retry(client, prompt_texto):
                 if response and response.text:
                     return response.text
             except Exception as e:
-                time.sleep(2)
+                erros_acumulados.append(str(e))
+                time.sleep(1)
                 continue
-    raise Exception("Não foi possível gerar o conteúdo devido a instabilidade temporária na API. Tente novamente em instantes.")
+                
+    raise Exception(f"Erro ao conectar com a API do Gemini. Detalhes: {erros_acumulados[-1] if erros_acumulados else 'Desconhecido'}")
 
 if gerar_btn:
     if not ativa_api_key:
         st.error("⚠️ Por favor, insira a sua Chave de API na barra lateral para continuar.")
     elif not curriculo_antigo or not descricao_vaga:
-        st.warning("⚠️️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
+        st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
         with st.spinner("A processar e reestruturando o currículo de acordo com os padrões da consultoria..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
-                # Prompt estruturado com base nas regras da consultoria
                 prompt_sistema = f"""
                 Você é um consultor especialista em RH e Otimização de Currículos ATS.
                 Com base no currículo antigo e na descrição da vaga fornecidos abaixo, gere um currículo reestruturado estritamente seguindo estas regras:
                 
                 1. FORMATO ESCOLHIDO: {modelo_escolhido}.
                 2. DADOS PESSOAIS: Extraia Nome, Bairro/Cidade, Telefone, E-mail e LinkedIn (com hiperlinks).
-                3. OBJETIVO: Coloque o cargo ou área pretendida (máximo 3 opções)[cite: 4].
-                4. PERFIL PROFISSIONAL (Escrito estritamente em 3ª pessoa)[cite: 5]:
-                   - 1º Parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando competências comportamentais importantes[cite: 5].
-                   - 2º Parágrafo: Expertises detalhadas com base nas atividades-chave e palavras-chave que mais se repetem na descrição da vaga[cite: 5].
-                   - 3º Parágrafo: Conhecimentos em sistemas e ferramentas teóricas relevantes[cite: 5].
-                5. FORMAÇÃO ACADÊMICA: Ordem de importância/cronológica (Pós-doutorado, Doutorado, Mestrado, Pós-graduação, Graduação, Técnico). Não incluir ensino médio se houver nível superior/técnico[cite: 4]. Formato: Nome do curso | Instituição de ensino - Ano de conclusão[cite: 4].
-                6. CURSOS E CERTIFICAÇÕES: Ordem alfabética ou cronológica[cite: 4]. Formato: Nome do curso | Instituição de ensino | Ano de conclusão (com validade se for certificação)[cite: 4].
-                7. EXPERIÊNCIAS PROFISSIONAIS: Ordem cronológica da mais recente para a mais antiga[cite: 4]. Descrições escritas em tópicos, neutras e profissionais baseadas nas exigências da vaga[cite: 4, 5].
+                3. OBJETIVO: Coloque o cargo ou área pretendida (máximo 3 opções).
+                4. PERFIL PROFISSIONAL (Escrito estritamente em 3ª pessoa):
+                   - 1º Parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando competências comportamentais importantes.
+                   - 2º Parágrafo: Expertises detalhadas com base nas atividades-chave e palavras-chave que mais se repetem na descrição da vaga.
+                   - 3º Parágrafo: Conhecimentos em sistemas e ferramentas teóricas relevantes.
+                5. FORMAÇÃO ACADÊMICA: Ordem de importância/cronológica (Pós-doutorado, Doutorado, Mestrado, Pós-graduação, Graduação, Técnico). Não incluir ensino médio se houver nível superior/técnico. Formato: Nome do curso | Instituição de ensino - Ano de conclusão.
+                6. CURSOS E CERTIFICAÇÕES: Ordem alfabética ou cronológica. Formato: Nome do curso | Instituição de ensino | Ano de conclusão.
+                7. EXPERIÊNCIAS PROFISSIONAIS: Ordem cronológica da mais recente para a mais antiga. Descrições escritas em tópicos, neutras e profissionais baseadas nas exigências da vaga.
                 
                 Currículo Antigo:
                 {curriculo_antigo}
@@ -123,7 +124,6 @@ if gerar_btn:
             except Exception as e:
                 st.error(f"Ocorreu um erro durante o processamento: {e}")
 
-# Se já houver currículo gerado, exibe os botões de visualização e download
 if "curriculo_gerado" in st.session_state:
     st.markdown("---")
     st.subheader("📄 Resultado Gerado")
@@ -131,7 +131,6 @@ if "curriculo_gerado" in st.session_state:
     
     st.info(f"Modo selecionado: **{modelo_escolhido}**. O documento gerado respeita as margens e diretrizes do padrão da consultoria.")
     
-    # Geração de Documento Word (.docx)
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.8)
