@@ -72,8 +72,9 @@ with col2:
 def chamar_gemini_com_retry(client, prompt_texto):
     # Lista atualizada utilizando apenas os modelos mais recentes e ativos
     modelos_para_tentar = [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro'
+'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.8-flash'
     ]
     
     erros_acumulados = []
