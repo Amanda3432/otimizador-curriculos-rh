@@ -70,12 +70,10 @@ with col2:
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
+    # Lista atualizada utilizando apenas os modelos mais recentes e ativos
     modelos_para_tentar = [
-        'gemini-2.5-flash', 
-        'gemini-2.5-pro', 
-        'gemini-2.5-flash-lite', 
-        'gemini-1.5-flash', 
-        'gemini-1.5-pro'
+        'gemini-2.5-flash',
+        'gemini-2.5-pro'
     ]
     
     erros_acumulados = []
@@ -107,7 +105,7 @@ if gerar_btn:
     elif not curriculo_antigo or not descricao_vaga:
         st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
-        with st.spinner("A processar e reestruturando o currículo com rotação inteligente de modelos..."):
+        with st.spinner("A processar e reestruturando o currículo com os modelos atuais..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
@@ -229,7 +227,7 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Funções de ícones padronizados exatamente no tamanho 13x13 (mesmo padrão elegante do LinkedIn)
+    # Funções de ícones padronizados exatamente no tamanho 13x13
     def criar_icone_casa():
         d = Drawing(13, 13)
         d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
