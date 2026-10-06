@@ -53,6 +53,55 @@ if modelo_escolhido == "Modelo Com Foto":
     st.sidebar.markdown("### 🖼️ Foto do Candidato")
     foto_arquivo = st.sidebar.file_uploader("Carregue a foto (JPG ou PNG)", type=["jpg", "jpeg", "png"])
 
+# --- FUNÇÃO PARA GERAR O MANUAL DO COLABORADOR EM PDF ---
+def gerar_manual_pdf():
+    buffer = io.BytesIO()
+    doc_m = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+    styles = getSampleStyleSheet()
+    
+    estilo_titulo = ParagraphStyle('ManTitulo', parent=styles['Heading1'], fontSize=15, leading=18, fontName="Times-Bold", textColor=colors.black, spaceAfter=4)
+    estilo_sub = ParagraphStyle('ManSub', parent=styles['Heading2'], fontSize=11, leading=14, fontName="Times-Bold", textColor=colors.black, spaceBefore=10, spaceAfter=3)
+    estilo_texto = ParagraphStyle('ManTexto', parent=styles['Normal'], fontSize=9, leading=13, fontName="Times-Roman", textColor=colors.black, spaceAfter=4)
+    
+    story_m = [
+        Paragraph("<b>MANUAL DO COLABORADOR: OTIMIZADOR DE CURRÍCULOS</b>", estilo_titulo),
+        HRFlowable(width="100%", thickness=1, color=colors.black, spaceAfter=8, spaceBefore=2),
+        
+        Paragraph("<b>1. Visão Geral da Ferramenta</b>", estilo_sub),
+        Paragraph("Ferramenta corporativa desenvolvida para reestruturar e otimizar currículos com base estritamente nos dados reais de cada candidato, direcionando-os para vagas específicas com um padrão visual profissional (fonte Times New Roman, cores pretas, ícones integrados e alinhamento refinado).", estilo_texto),
+        
+        Paragraph("<b>2. Passo a Passo para Utilização</b>", estilo_sub),
+        Paragraph("• <b>Passo 1 (Chave de API):</b> Na barra lateral esquerda, insira a sua chave de API individual no campo indicado.", estilo_texto),
+        Paragraph("• <b>Passo 2 (Escolha do Formato):</b> Selecione 'Modelo Clássico (Sem Foto)' ou 'Modelo Com Foto'. Se escolher com foto, faça o upload da imagem (JPG ou PNG) do candidato.", estilo_texto),
+        Paragraph("• <b>Passo 3 (Inserção de Dados):</b> No campo superior esquerdo, cole o currículo antigo completo do cliente. No campo abaixo, cole a descrição ou os requisitos da vaga pretendida.", estilo_texto),
+        Paragraph("• <b>Passo 4 (Geração):</b> Clique no botão azul <b>'🚀 Otimizar Currículo Agora'</b> e aguarde o processamento.", estilo_texto),
+        Paragraph("• <b>Passo 5 (Download):</b> Baixe o resultado final pronto em formato <b>Word (.docx)</b> ou <b>PDF</b>.", estilo_texto),
+        
+        Paragraph("<b>3. Vantagens e Qualidades</b>", estilo_sub),
+        Paragraph("• Padronização visual rigorosa e imediata dos currículos da consultoria.<br/>• Fidelidade total ao histórico verídico do candidato (sem invenção de dados).<br/>• Agilidade operacional, reduzindo o tempo gasto com formatações manuais.", estilo_texto),
+        
+        Paragraph("<b>4. Cuidados e Limitações (Versão Gratuita)</b>", estilo_sub),
+        Paragraph("• <b>Limites de Cota por Minuto:</b> Como a API opera no plano gratuito, um volume massivo de envios simultâneos pode gerar interrupções temporárias.<br/>• <b>Inatividade Temporária:</b> Caso o limite seja atingido, a ferramenta exibirá um aviso e normalizará automaticamente após 1 a 2 minutos.<br/>• <b>Chave Individual:</b> Nunca compartilhe sua chave de API pessoal com colegas para evitar o esgotamento prematuro da cota.", estilo_texto),
+        
+        Paragraph("<b>5. O que fazer em caso de Erros?</b>", estilo_sub),
+        Paragraph("Se ocorrer algum aviso de limite excedido, aguarde de 1 a 2 minutos e tente novamente. Caso o problema persista devido ao alto volume de trabalho, comunique a gestão para avaliarmos a transição para o plano pago corporativo.", estilo_texto)
+    ]
+    
+    doc_m.build(story_m)
+    buffer.seek(0)
+    return buffer
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📘 Documentação")
+manual_pdf_buffer = gerar_manual_pdf()
+st.sidebar.download_button(
+    label="📥 Baixar Manual do Colaborador (PDF)",
+    data=manual_pdf_buffer,
+    file_name="manual_colaborador_otimizador.pdf",
+    mime="application/pdf",
+    use_container_width=True
+)
+
 ativa_api_key = st.session_state.get("api_key", "")
 
 # --- ÁREA PRINCIPAL ---
@@ -72,7 +121,8 @@ with col2:
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
         'gemini-3.7-flash',
-        'gemini-3.6-flash', 'gemini-3.5-flash'
+        'gemini-3.6-flash',
+        'gemini-3.1-pro-preview'
     ]
     
     erros_acumulados = []
@@ -111,6 +161,7 @@ if gerar_btn:
                 prompt_sistema = f"""
                 Você é um consultor especialista em RH. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga desejada.
                 RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte apenas a linguagem para ficar profissional e alinhada à vaga.
+                IMPORTANTE SOBRE O ESPAÇAMENTO: No bloco [PERFIL PROFISSIONAL], escreva os parágrafos em sequência direta, utilizando apenas quebras simples (sem linhas em branco extras entre um parágrafo e outro) para evitar espaçamento vertical excessivo.
                 
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
@@ -124,7 +175,7 @@ if gerar_btn:
                 [Bairro, Cidade | Telefone | E-mail | LinkedIn reais extraídos do currículo]
                 
                 [PERFIL PROFISSIONAL]
-                (Escrito estritamente em 3ª pessoa e dividido em exatamente 3 parágrafos, sem quebras extras dentro do mesmo parágrafo, baseando-se no histórico real do candidato):
+                (Escrito estritamente em 3ª pessoa e dividido em exatamente 3 parágrafos, um logo abaixo do outro, sem linhas em branco intermediárias, baseando-se no histórico real do candidato):
                 1º Parágrafo: Profissional atuante na área [cargo/objetivo], destacando-se pela capacidade em [competências reais do candidato], garantindo eficiência nas rotinas da área.
                 2º Parágrafo: Expertises em [atividades e competências reais do candidato alinhadas aos requisitos da vaga].
                 3º Parágrafo: Conhecimentos em [ferramentas, sistemas e fundamentos reais apresentados no histórico].
@@ -196,14 +247,15 @@ if "curriculo_gerado" in st.session_state:
     
     cor_total = colors.HexColor("#000000")
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=14, leading=16, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=12, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=13, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    # Estilos ajustados: fonte um pouco maior para legibilidade e espaços compactos
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=13, leading=15, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=9, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=12, textColor=cor_total, spaceBefore=8, spaceAfter=3, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=8.5, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=3, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=11, textColor=cor_total, spaceBefore=5, spaceAfter=2, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
     story = []
 
@@ -226,7 +278,6 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Funções de ícones padronizados com visibilidade corrigida e espaçamento ideal
     def criar_icone_casa():
         d = Drawing(14, 14)
         d.add(Rect(0, 0, 14, 14, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
@@ -254,7 +305,6 @@ if "curriculo_gerado" in st.session_state:
         d.add(String(2.5, 3, "in", fontName="Helvetica-Bold", fontSize=9, fillColor=colors.white))
         return d
 
-    # Tratamento para Coluna Esquerda (Com foto e Nome/Cargo ao lado, ou apenas texto padrão)
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
@@ -295,8 +345,8 @@ if "curriculo_gerado" in st.session_state:
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('ALIGN', (0,0), (0,-1), 'RIGHT'),
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
-        ('TOPPADDING', (0,0), (-1,-1), 2),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('TOPPADDING', (0,0), (-1,-1), 1),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1),
         ('LEFTPADDING', (1,0), (1,-1), 8),
         ('RIGHTPADDING', (0,0), (0,-1), 4),
     ]))
@@ -310,13 +360,13 @@ if "curriculo_gerado" in st.session_state:
     ]))
     
     story.append(t_header)
-    story.append(Spacer(1, 4))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=6, spaceBefore=0))
+    story.append(Spacer(1, 2))
+    story.append(HRFlowable(width="100%", thickness=0.6, color=cor_total, spaceAfter=4, spaceBefore=0))
 
     def adicionar_secao(titulo, conteudo_html):
         if conteudo_html:
             story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
-            story.append(HRFlowable(width="100%", thickness=0.4, color=cor_total, spaceAfter=4, spaceBefore=1))
+            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=2, spaceBefore=1))
             story.append(Paragraph(conteudo_html, estilo_texto))
 
     if perfil_txt:
@@ -336,7 +386,7 @@ if "curriculo_gerado" in st.session_state:
 
     if experiencia_txt:
         story.append(Paragraph("<b>Experiência Profissional</b>", estilo_titulo_secao))
-        story.append(HRFlowable(width="100%", thickness=0.4, color=cor_total, spaceAfter=4, spaceBefore=1))
+        story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=2, spaceBefore=1))
         
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
@@ -364,7 +414,7 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = item.lstrip('-•* ').strip()
                 story.append(Paragraph(f"• {item_limpo}", estilo_texto))
             
-            story.append(Spacer(1, 3))
+            story.append(Spacer(1, 2))
 
     pdf_doc.build(story)
     buffer_pdf.seek(0)
