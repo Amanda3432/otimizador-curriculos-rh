@@ -11,11 +11,12 @@ import time
 import io
 import os
 import re
+import base64
 
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada ajustada estritamente à fonte Times New Roman/Roman, cores pretas sólidas e ícones da imagem de referência.")
+st.markdown("Ferramenta automatizada ajustada estritamente à fonte Times New Roman, cores pretas sólidas e ícones integrados automaticamente.")
 
 # --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
 st.sidebar.header("🔑 Configuração da API")
@@ -65,12 +66,11 @@ with col1:
 
 with col2:
     st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas e os ícones gráficos idênticos aos da referência.")
+    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas e o ícone exato do LinkedIn integrado automaticamente.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
-    # Lista completa de rotação automática: se um falhar ou esgotar a cota, o sistema testa o próximo instantaneamente
     modelos_para_tentar = [
         'gemini-3.8-flash', 
         'gemini-3.7-flash', 
@@ -82,7 +82,6 @@ def chamar_gemini_com_retry(client, prompt_texto):
     erros_acumulados = []
     
     for modelo in modelos_para_tentar:
-        # Tenta duas vezes por modelo antes de passar para o próximo da lista
         for tentativa in range(2):
             try:
                 response = client.models.generate_content(
@@ -95,7 +94,6 @@ def chamar_gemini_com_retry(client, prompt_texto):
                 erro_str = str(e)
                 erros_acumulados.append(f"[{modelo}] {erro_str}")
                 
-                # Se for erro de quota esgotada (429), avança mais rápido para o próximo modelo da fila
                 if "429" in erro_str or "RESOURCE_EXHAUSTED" in erro_str:
                     break 
                 
@@ -195,7 +193,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO EXATO COM FONTES TIMES, CORES PRETAS E ÍCONES) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -208,7 +206,7 @@ if "curriculo_gerado" in st.session_state:
     
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=12, textColor=cor_total, spaceBefore=6, spaceAfter=2, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=1)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
     estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
     story = []
@@ -232,32 +230,33 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Funções para gerar os ícones vetoriais em preto puro (mesma escala e padrão visual)
+    # Funções para gerar os ícones de casa, telefone e e-mail
     def criar_icone_casa():
-        d = Drawing(12, 11)
-        d.add(Polygon([1, 4, 6, 0, 11, 4], fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(3, 0, 6, 5, fillColor=colors.black, strokeColor=colors.black))
+        d = Drawing(13, 12)
+        d.add(Polygon([0, 4.5, 6.5, 0, 13, 4.5], fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(2.5, 0, 8, 6, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(4.5, 0, 3.5, 3.5, fillColor=colors.white, strokeColor=colors.white))
         return d
 
     def criar_icone_telefone():
-        d = Drawing(12, 11)
-        d.add(Rect(2, 2, 8, 7, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d = Drawing(13, 12)
+        d.add(Polygon([1, 8, 4, 11, 7, 8, 5, 6, 8, 3, 10, 5, 12, 2, 9, 0, 7, 1, 3, 5], fillColor=colors.black, strokeColor=colors.black))
         return d
 
     def criar_icone_email():
         d = Drawing(13, 11)
-        d.add(Rect(0, 1, 13, 9, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Line(1, 9, 6.5, 5, strokeColor=colors.white, strokeWidth=1))
-        d.add(Line(6.5, 5, 12, 9, strokeColor=colors.white, strokeWidth=1))
+        d.add(Rect(0, 0, 13, 11, rx=1, ry=1, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Line(1.5, 9, 6.5, 4.5, strokeColor=colors.white, strokeWidth=1.5))
+        d.add(Line(6.5, 4.5, 11.5, 9, strokeColor=colors.white, strokeWidth=1.5))
         return d
 
-    def criar_icone_linkedin():
-        d = Drawing(12, 11)
-        d.add(Rect(0, 0, 12, 11, rx=1, ry=1, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(2, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Circle(3, 9, 1, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Rect(6, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
-        return d
+    # Ícone exato do LinkedIn embutido automaticamente via string base64
+    linkedin_base64 = "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmFAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAGxSURBVGhD7dgxTsNAEAbgf3uQkBCiJAoKNwV1XIFL0FIpUfAANVzAFXgC11ABQdEhcAkFBVwFCeEQlH1vY3G89mP8pdkS//bH6+yuvt0qA4z+Z0wB2q0H93kANWv9HhR00P14vXfD+2289c8tFpP67s8Z2234P20439y7+4vI30qI3t51B78O2L18O3r75vN21N0OaGz0Oxtz7A6tH233c4uNl4Dtrb3/u/Z3tA47W28n7u+62a98DttY/j1wF70eL17/fV1Vn+7W8B29v3Azt0FtuZuvsMftnfb9bS3M1pftvfa2e93Gz9n/v2z7d1F/tM3f1r305c/7f2+Xv51L9bX393bM//4jQ9e9j9D7wPbu4fXg7x78A/fDvvbF1rF92d3Yn9r4jftD3Z/vV263889M8wP24N9bF98gW06sM39c8gfvHnF29t36b9c9M/wL3127C7/r3x717+P3n313Y398gW38wDvvL9Nf69D7z/tA43Xf78/Tf74P2D8Af78E56o242AAAAAElFTkSuQmCC"
+    
+    temp_lk_path = "temp_linkedin_auto.png"
+    with open(temp_lk_path, "wb") as f:
+        f.write(base64.b64decode(linkedin_base64))
+    icone_linkedin_obj = RLImage(temp_lk_path, width=11, height=11)
 
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
@@ -275,8 +274,8 @@ if "curriculo_gerado" in st.session_state:
         [Paragraph(cidade_bairro, estilo_contato_dir), criar_icone_casa()],
         [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
         [Paragraph(email, estilo_contato_dir), criar_icone_email()],
-        [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[175, 20])
+        [Paragraph(linkedin, estilo_contato_dir), icone_linkedin_obj]
+    ], colWidths=[170, 25])
     
     tabela_contatos_direita.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -331,7 +330,16 @@ if "curriculo_gerado" in st.session_state:
                 continue
             
             empresa_periodo = linhas_bloco[0]
-            story.append(Paragraph(f"{empresa_periodo}", estilo_exp_empresa))
+            
+            if "|" in empresa_periodo:
+                partes_emp = empresa_periodo.split("|")
+                nome_emp = partes_emp[0].strip()
+                resto_emp = partes_emp[1].strip()
+                empresa_formatada = f"<b><i>{nome_emp}</i></b> | {resto_emp}"
+            else:
+                empresa_formatada = f"<b><i>{empresa_periodo}</i></b>"
+                
+            story.append(Paragraph(empresa_formatada, estilo_exp_empresa))
             
             if len(linhas_bloco) > 1:
                 cargo_linha = linhas_bloco[1]
@@ -348,6 +356,8 @@ if "curriculo_gerado" in st.session_state:
 
     if os.path.exists("temp_foto.png"):
         os.remove("temp_foto.png")
+    if os.path.exists("temp_linkedin_auto.png"):
+        os.remove("temp_linkedin_auto.png")
 
     col_d1, col_d2 = st.columns(2)
     with col_d1:
