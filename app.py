@@ -5,7 +5,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from reportlab.graphics.shapes import Drawing, Rect, Polygon, Circle, Line, String
+from reportlab.graphics.shapes import Drawing, Rect, Polygon, String
 from google import genai
 import time
 import io
@@ -70,9 +70,8 @@ with col2:
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
-    # Lista atualizada utilizando apenas os modelos mais recentes e ativos
     modelos_para_tentar = [
-'gemini-3.7-flash',
+        'gemini-3.7-flash',
         'gemini-3.6-flash'
     ]
     
@@ -197,14 +196,14 @@ if "curriculo_gerado" in st.session_state:
     
     cor_total = colors.HexColor("#000000")
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=14, leading=16, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=12, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=13, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=12, textColor=cor_total, spaceBefore=6, spaceAfter=2, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=12, textColor=cor_total, spaceBefore=8, spaceAfter=3, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=8.5, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=3, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
 
     story = []
 
@@ -227,39 +226,58 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Funções de ícones padronizados exatamente no tamanho 13x13
+    # Funções de ícones padronizados com visibilidade corrigida e espaçamento ideal
     def criar_icone_casa():
-        d = Drawing(13, 13)
-        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Polygon([3, 7.5, 6.5, 4.5, 10, 7.5], fillColor=colors.white, strokeColor=colors.white))
-        d.add(Rect(4.5, 2.5, 4, 4, fillColor=colors.white, strokeColor=colors.white))
+        d = Drawing(14, 14)
+        d.add(Rect(0, 0, 14, 14, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Polygon([3, 7.5, 7, 3.5, 11, 7.5], fillColor=colors.white, strokeColor=colors.white))
+        d.add(Rect(4.5, 2, 5, 5.5, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Rect(5.5, 2, 3, 3, fillColor=colors.black, strokeColor=colors.black))
         return d
 
     def criar_icone_telefone():
-        d = Drawing(13, 13)
-        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Polygon([3.5, 9, 5.5, 11, 7.5, 9, 6.5, 8, 8.5, 6, 9.5, 7, 10.5, 5, 8.5, 3, 7.5, 4, 5, 6.5], fillColor=colors.white, strokeColor=colors.white))
+        d = Drawing(14, 14)
+        d.add(Rect(0, 0, 14, 14, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Polygon([3.5, 10, 5, 11.5, 6.5, 10, 5.5, 9, 8.5, 6, 9.5, 7, 11, 5.5, 9.5, 4, 8.5, 5, 5.5, 8], fillColor=colors.white, strokeColor=colors.white))
         return d
 
     def criar_icone_email():
-        d = Drawing(13, 13)
-        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(2.5, 3.5, 8, 6, rx=0.5, ry=0.5, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Polygon([2.8, 9.2, 6.5, 6.5, 10.2, 9.2], fillColor=colors.black, strokeColor=colors.black))
+        d = Drawing(14, 14)
+        d.add(Rect(0, 0, 14, 14, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(2, 3.5, 10, 7, rx=1, ry=1, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Polygon([2.2, 10.3, 7, 7, 11.8, 10.3], fillColor=colors.black, strokeColor=colors.black))
         return d
 
     def criar_icone_linkedin():
-        d = Drawing(13, 13)
-        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
+        d = Drawing(14, 14)
+        d.add(Rect(0, 0, 14, 14, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
         d.add(String(2.5, 3, "in", fontName="Helvetica-Bold", fontSize=9, fillColor=colors.white))
         return d
 
+    # Tratamento para Coluna Esquerda (Com foto e Nome/Cargo ao lado, ou apenas texto padrão)
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=55, height=55)
-        coluna_esquerda = [img]
+        img = RLImage(temp_foto_path, width=48, height=48)
+        
+        infos_com_foto = [
+            Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
+            Paragraph(cargo_txt, estilo_cargo)
+        ]
+        
+        tabela_esquerda_foto = Table([
+            [img, infos_com_foto]
+        ], colWidths=[54, 291])
+        tabela_esquerda_foto.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,0), 'LEFT'),
+            ('LEFTPADDING', (1,0), (1,0), 6),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        coluna_esquerda = tabela_esquerda_foto
     else:
         coluna_esquerda = [
             Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
@@ -271,15 +289,16 @@ if "curriculo_gerado" in st.session_state:
         [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
         [Paragraph(email, estilo_contato_dir), criar_icone_email()],
         [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[170, 25])
+    ], colWidths=[160, 35])
     
     tabela_contatos_direita.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('ALIGN', (0,0), (0,-1), 'RIGHT'),
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ('LEFTPADDING', (1,0), (1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('LEFTPADDING', (1,0), (1,-1), 8),
+        ('RIGHTPADDING', (0,0), (0,-1), 4),
     ]))
 
     t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[345, 195])
@@ -291,13 +310,13 @@ if "curriculo_gerado" in st.session_state:
     ]))
     
     story.append(t_header)
-    story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=0.7, color=cor_total, spaceAfter=4, spaceBefore=0))
+    story.append(Spacer(1, 4))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=6, spaceBefore=0))
 
     def adicionar_secao(titulo, conteudo_html):
         if conteudo_html:
             story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
-            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=3, spaceBefore=1))
+            story.append(HRFlowable(width="100%", thickness=0.4, color=cor_total, spaceAfter=4, spaceBefore=1))
             story.append(Paragraph(conteudo_html, estilo_texto))
 
     if perfil_txt:
@@ -317,7 +336,7 @@ if "curriculo_gerado" in st.session_state:
 
     if experiencia_txt:
         story.append(Paragraph("<b>Experiência Profissional</b>", estilo_titulo_secao))
-        story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=3, spaceBefore=1))
+        story.append(HRFlowable(width="100%", thickness=0.4, color=cor_total, spaceAfter=4, spaceBefore=1))
         
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
@@ -345,7 +364,7 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = item.lstrip('-•* ').strip()
                 story.append(Paragraph(f"• {item_limpo}", estilo_texto))
             
-            story.append(Spacer(1, 2))
+            story.append(Spacer(1, 3))
 
     pdf_doc.build(story)
     buffer_pdf.seek(0)
