@@ -67,11 +67,13 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
+# Função atualizada com os modelos atuais do Google AI Studio e rotação de fallback em caso de erro 503
 def chamar_gemini_com_retry(client, prompt_texto):
-    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-flash-latest']
+    modelos_para_tentar = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.1-pro']
+    
     erros_acumulados = []
     for modelo in modelos_para_tentar:
-        for tentativa in range(2):
+        for tentativa in range(3):
             try:
                 response = client.models.generate_content(
                     model=modelo,
@@ -80,10 +82,11 @@ def chamar_gemini_com_retry(client, prompt_texto):
                 if response and response.text:
                     return response.text
             except Exception as e:
-                erros_acumulados.append(str(e))
-                time.sleep(1)
+                erros_acumulados.append(f"[{modelo}] {str(e)}")
+                time.sleep(2) # Pausa curta antes de tentar o próximo passo ou modelo
                 continue
-    raise Exception(f"Erro ao conectar com a API do Gemini. Detalhes: {erros_acumulados[-1] if erros_acumulados else 'Desconhecido'}")
+                
+    raise Exception(f"Todos os modelos atuais estão ocupados no momento. Detalhes: {erros_acumulados[-1]}")
 
 if gerar_btn:
     if not ativa_api_key:
