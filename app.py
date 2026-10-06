@@ -5,6 +5,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from reportlab.graphics.shapes import Drawing, Rect, Polygon, Circle, Path
 from google import genai
 import time
 import io
@@ -14,7 +15,7 @@ import re
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada para otimização de currículos estritamente alinhada ao tutorial e layout clássico com ícones.")
+st.markdown("Ferramenta automatizada ajustada estritamente à fonte Times New Roman/Roman, cores pretas sólidas e ícones da imagem de referência.")
 
 # --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
 st.sidebar.header("🔑 Configuração da API")
@@ -64,7 +65,7 @@ with col1:
 
 with col2:
     st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema seguirá rigorosamente as regras da Sala de Emprego, com ícones de contato (casinha, telefone, e-mail, LinkedIn) e formatação idêntica ao modelo.")
+    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas e os ícones gráficos idênticos aos da referência.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -94,7 +95,7 @@ if gerar_btn:
     elif not curriculo_antigo or not descricao_vaga:
         st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
-        with st.spinner("A processar e reestruturando o currículo de acordo com o tutorial oficial..."):
+        with st.spinner("A processar e reestruturando o currículo de acordo com o padrão visual oficial..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
@@ -129,7 +130,7 @@ if gerar_btn:
                 
                 [EXPERIÊNCIA PROFISSIONAL]
                 Empresa | Mês/Ano de entrada - Mês/Ano de saída (ou Atual)
-                Cargo (colocar em itálico no layout)
+                Cargo
                 - Atividade neutra e profissional 1 baseada em anúncios de vagas
                 - Atividade neutra e profissional 2 baseada em anúncios de vagas
                 
@@ -166,9 +167,9 @@ if "curriculo_gerado" in st.session_state:
 
     style = doc.styles['Normal']
     font = style.font
-    font.name = 'Calibri'
+    font.name = 'Times New Roman'
     font.size = Pt(11)
-    font.color.rgb = RGBColor(51, 51, 51)
+    font.color.rgb = RGBColor(0, 0, 0)
 
     p_corpo = doc.add_paragraph()
     p_corpo.add_run(texto_gerado)
@@ -177,22 +178,21 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO EXATO COM ÍCONES E ITÁLICOS) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO EXATO COM FONTES TIMES E PRETO SÓLIDO) ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
-    cor_primaria = colors.HexColor("#000000") 
-    cor_texto = colors.HexColor("#222222")    
-    cor_secundaria = colors.HexColor("#555555") 
+    cor_total = colors.HexColor("#000000") # Preto sólido idêntico à imagem de referência
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_primaria, fontName="Helvetica-Bold", spaceAfter=1)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_secundaria, fontName="Helvetica", spaceAfter=2)
-    estilo_contato = ParagraphStyle('ContatoEstilo', parent=styles['Normal'], fontSize=8, leading=11, textColor=cor_secundaria, alignment=2) 
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=12, textColor=cor_primaria, spaceBefore=6, spaceAfter=2, fontName="Helvetica-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_texto, spaceAfter=2.5, alignment=4)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=colors.HexColor("#111111"), fontName="Helvetica-Oblique", spaceAfter=1) # Exatamente em itálico conforme o modelo
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=12, textColor=cor_total, spaceBefore=6, spaceAfter=2, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=1)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
     story = []
 
@@ -209,19 +209,61 @@ if "curriculo_gerado" in st.session_state:
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
 
-    # Processamento dos contactos para adicionar os ícones visuais exigidos (Casinha, Telefone, E-mail, LinkedIn)
     partes_contato = [p.strip() for p in contato_txt.replace('|', ',').split(',') if p.strip()]
-    contatos_com_icones = []
-    
-    # Mapeamento e injeção visual dos ícones idênticos ao modelo
-    icones_unicos = ["🏠 ", "📞 ", "✉️ ", "🔗 "]
-    for i, parte in enumerate(partes_contato):
-        icone = icones_unicos[i] if i < len(icones_unicos) else "• "
-        contatos_com_icones.append(f"{icone}{parte}")
-    
-    contato_formatado_com_icones = "<br/>".join(contatos_com_icones)
+    cidade_bairro = partes_contato[0] if len(partes_contato) > 0 else "Bairro, Cidade"
+    telefone = partes_contato[1] if len(partes_contato) > 1 else "Telefone"
+    email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
+    linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Cabeçalho com tabela idêntica ao modelo clássico
+    # Funções construtoras dos ícones gráficos idênticos aos da referência
+    def criar_icone_casa():
+        d = Drawing(12, 11)
+        d.add(Polygon([1, 4, 6, 0, 11, 4], fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(3, 0, 6, 5, fillColor=colors.black, strokeColor=colors.black))
+        return d
+
+    def criar_icone_telefone():
+        d = Drawing(12, 11)
+        p = Path(fillColor=colors.black, strokeColor=colors.black)
+        p.moveTo(1, 9)
+        p.curveTo(1, 11, 3, 11, 5, 9)
+        p.lineTo(7, 7)
+        p.curveTo(8, 6, 8, 4, 6, 2)
+        p.lineTo(4, 4)
+        p.lineTo(6, 6)
+        p.lineTo(5, 7)
+        d.add(p)
+        return d
+
+    def criar_icone_email():
+        d = Drawing(13, 11)
+        d.add(Rect(0, 1, 13, 9, fillColor=colors.black, strokeColor=colors.black))
+        p = Path(fillColor=colors.white, strokeColor=colors.white, strokeWidth=1)
+        p.moveTo(1, 9)
+        p.lineTo(6.5, 5)
+        p.lineTo(12, 9)
+        d.add(p)
+        return d
+
+    def criar_icone_linkedin():
+        d = Drawing(12, 11)
+        d.add(Rect(0, 0, 12, 11, rx=1, ry=1, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(2, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Circle(3, 9, 1, fillColor=colors.white, strokeColor=colors.white))
+        p = Path(fillColor=colors.white, strokeColor=colors.white)
+        p.moveTo(6, 3)
+        p.lineTo(8, 3)
+        p.lineTo(8, 5)
+        p.curveTo(8.5, 4, 9.5, 3, 10.5, 4)
+        p.lineTo(10.5, 8)
+        p.lineTo(8.5, 8)
+        p.lineTo(8.5, 5.5)
+        p.curveTo(8.5, 4.5, 7.5, 4.5, 7.5, 5.5)
+        p.lineTo(7.5, 8)
+        p.lineTo(6, 8)
+        d.add(p)
+        return d
+
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
@@ -234,87 +276,43 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(cargo_txt, estilo_cargo)
         ]
 
-    coluna_direita = [Paragraph(contato_formatado_com_icones, estilo_contato)]
+    tabela_contatos_direita = Table([
+        [Paragraph(cidade_bairro, estilo_contato_dir), criar_icone_casa()],
+        [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
+        [Paragraph(email, estilo_contato_dir), criar_icone_email()],
+        [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
+    ], colWidths=[175, 20])
     
-    t_header = Table([ [coluna_esquerda, coluna_direita] ], colWidths=[350, 190])
+    tabela_contatos_direita.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ALIGN', (0,0), (0,-1), 'RIGHT'),
+        ('ALIGN', (1,0), (1,-1), 'CENTER'),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING', (1,0), (1,-1), 4),
+    ]))
+
+    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[345, 195])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ('TOPPADDING', (0,0), (-1,-1), 0),
     ]))
+    
     story.append(t_header)
     story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=0.7, color=cor_primaria, spaceAfter=4, spaceBefore=0))
+    story.append(HRFlowable(width="100%", thickness=0.7, color=cor_total, spaceAfter=4, spaceBefore=0))
 
     def adicionar_secao(titulo, conteudo_html):
         if conteudo_html:
             story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
-            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_secundaria, spaceAfter=3, spaceBefore=1))
+            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=3, spaceBefore=1))
             story.append(Paragraph(conteudo_html, estilo_texto))
 
     if perfil_txt:
         paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n\n') if p.strip()]
         perfil_formatado = "<br/><br/>".join(paragrafos_perfil)
-        adicionar_secao("PERFIL PROFISSIONAL", perfil_formatado)
+        adicionar_secao("Perfil Profissional", perfil_formatado)
 
     if formacao_txt:
-        adicionar_secao("FORMAÇÃO ACADÊMICA", formacao_txt.replace('\n', '<br/>'))
-
-    if cursos_txt:
-        adicionar_secao("CURSOS E CERTIFICAÇÕES", cursos_txt.replace('\n', '<br/>'))
-
-    if habilidades_txt:
-        hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
-        adicionar_secao("HABILIDADES E COMPETÊNCIAS", hab_formatadas)
-
-    if experiencia_txt:
-        story.append(Paragraph("<b>EXPERIÊNCIA PROFISSIONAL</b>", estilo_titulo_secao))
-        story.append(HRFlowable(width="100%", thickness=0.3, color=cor_secundaria, spaceAfter=3, spaceBefore=1))
-        
-        blocos_exp = experiencia_txt.split("\n\n")
-        for bloco in blocos_exp:
-            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
-            if not linhas_bloco:
-                continue
-            
-            empresa_periodo = linhas_bloco[0]
-            story.append(Paragraph(f"<b>{empresa_periodo}</b>", estilo_texto))
-            
-            if len(linhas_bloco) > 1:
-                cargo_linha = linhas_bloco[1]
-                # Cargo estritamente em itálico conforme o modelo clássico
-                story.append(Paragraph(f"{cargo_linha}", estilo_exp_cargo))
-            
-            for item in linhas_bloco[2:]:
-                item_limpo = item.lstrip('-•* ').strip()
-                story.append(Paragraph(f"• {item_limpo}", estilo_texto))
-            
-            story.append(Spacer(1, 2))
-
-    pdf_doc.build(story)
-    buffer_pdf.seek(0)
-
-    if os.path.exists("temp_foto.png"):
-        os.remove("temp_foto.png")
-
-    # Botões de Download lado a lado
-    col_d1, col_d2 = st.columns(2)
-    with col_d1:
-        st.download_button(
-            label=f"📥 Baixar em Word ({modelo_escolhido})",
-            data=buffer_word,
-            file_name="curriculo_otimizado.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            type="primary",
-            use_container_width=True
-        )
-    with col_d2:
-        st.download_button(
-            label=f"📥 Baixar em PDF ({modelo_escolhido})",
-            data=buffer_pdf,
-            file_name="curriculo_otimizado.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True
-        )
