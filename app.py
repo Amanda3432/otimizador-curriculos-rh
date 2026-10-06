@@ -3,16 +3,18 @@ import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from google import genai
 import time
+import io
+import os
 
 st.set_page_config(page_title="Otimizador de Currículos - Consultoria", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Consultoria)")
-st.markdown("Ferramenta automatizada para otimização de currículos alinhada aos padrões de recrutamento e seleção.")
+st.markdown("Ferramenta automatizada para otimização de currículos com layout personalizado e exportação em Word e PDF.")
 
 # --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
 st.sidebar.header("🔑 Configuração da API")
@@ -44,6 +46,12 @@ modelo_escolhido = st.sidebar.radio(
     ("Modelo Clássico (Sem Foto)", "Modelo Com Foto")
 )
 
+foto_arquivo = None
+if modelo_escolhido == "Modelo Com Foto":
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🖼️ Foto do Candidato")
+    foto_arquivo = st.sidebar.file_uploader("Carregue a foto (JPG ou PNG)", type=["jpg", "jpeg", "png"])
+
 ativa_api_key = st.session_state.get("api_key", "")
 
 # --- ÁREA PRINCIPAL ---
@@ -56,14 +64,12 @@ with col1:
 
 with col2:
     st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema vai reestruturar o perfil profissional em 3 parágrafos, ajustar as experiências em tópicos neutros baseados na vaga e organizar a formação e cursos conforme as normas da consultoria.")
+    st.info("O sistema vai reestruturar o perfil em 3 parágrafos, ajustar as experiências e gerar o documento estruturado nos formatos Word e PDF com o layout exato da consultoria.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# Função robusta com os modelos corretos e compatíveis do SDK moderno
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = ['gemini-2.5-flash', 'gemini-flash-latest']
-    
     erros_acumulados = []
     for modelo in modelos_para_tentar:
         for tentativa in range(2):
@@ -78,7 +84,6 @@ def chamar_gemini_com_retry(client, prompt_texto):
                 erros_acumulados.append(str(e))
                 time.sleep(1)
                 continue
-                
     raise Exception(f"Erro ao conectar com a API do Gemini. Detalhes: {erros_acumulados[-1] if erros_acumulados else 'Desconhecido'}")
 
 if gerar_btn:
@@ -87,36 +92,41 @@ if gerar_btn:
     elif not curriculo_antigo or not descricao_vaga:
         st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
-        with st.spinner("A processar e reestruturando o currículo de acordo com os padrões da consultoria..."):
+        with st.spinner("A processar e reestruturando o currículo de acordo com o padrão visual da consultoria..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
                 prompt_sistema = f"""
                 Você é um consultor especialista em RH e Otimização de Currículos ATS.
-                Com base no currículo antigo e na descrição da vaga fornecidos abaixo, gere um currículo reestruturado estritamente seguindo estas regras:
+                Com base no currículo antigo e na descrição da vaga fornecidos, gere o conteúdo estruturado rigorosamente com os seguintes campos e seções exatas:
                 
-                1. FORMATO ESCOLHIDO: {modelo_escolhido}.
-                2. DADOS PESSOAIS: Extraia Nome, Bairro/Cidade, Telefone, E-mail e LinkedIn (com hiperlinks).
-                3. OBJETIVO: Coloque o cargo ou área pretendida (máximo 3 opções).
-                4. PERFIL PROFISSIONAL (Escrito estritamente em 3ª pessoa):
-                   - 1º Parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando competências comportamentais importantes.
-                   - 2º Parágrafo: Expertises detalhadas com base nas atividades-chave e palavras-chave que mais se repetem na descrição da vaga.
-                   - 3º Parágrafo: Conhecimentos em sistemas e ferramentas teóricas relevantes.
-                5. FORMAÇÃO ACADÊMICA: Ordem de importância/cronológica (Pós-doutorado, Doutorado, Mestrado, Pós-graduação, Graduação, Técnico). Não incluir ensino médio se houver nível superior/técnico. Formato: Nome do curso | Instituição de ensino - Ano de conclusão.
-                6. CURSOS E CERTIFICAÇÕES: Ordem alfabética ou cronológica. Formato: Nome do curso | Instituição de ensino | Ano de conclusão.
-                7. EXPERIÊNCIAS PROFISSIONAIS: Ordem cronológica da mais recente para a mais antiga. Descrições escritas em tópicos, neutras e profissionais baseadas nas exigências da vaga.
+                [NOME]
+                [CARGO/OBJETIVO] (Máximo 3 opções)
+                [CONTATOS] (Bairro, Cidade | Telefone | E-mail | LinkedIn)
+                
+                [PERFIL PROFISSIONAL]
+                (Escrito estritamente em 3ª pessoa: 1º Parágrafo com tempo de atuação e competências comportamentais; 2º Parágrafo com expertises e palavras-chave da vaga; 3º Parágrafo com conhecimentos em sistemas e ferramentas).
+                
+                [FORMAÇÃO ACADÊMICA]
+                (Ordem de importância/cronológica. Formato: Nome do curso | Instituição de ensino - Ano de conclusão).
+                
+                [CURSOS E CERTIFICAÇÕES]
+                (Ordem alfabética ou cronológica. Formato: Nome do curso | Instituição de ensino | Ano de conclusão).
+                
+                [HABILIDADES E COMPETÊNCIAS]
+                (Listar tópicos com as competências técnicas e comportamentais extraídas da vaga).
+                
+                [EXPERIÊNCIA PROFISSIONAL]
+                (Ordem cronológica da mais recente para a mais antiga. Empresa | Período e Cargo | Tópicos neutros de atividades).
                 
                 Currículo Antigo:
                 {curriculo_antigo}
                 
                 Descrição da Vaga / Requisitos:
                 {descricao_vaga}
-                
-                Retorne o conteúdo limpo, organizado por seções claras para que possa ser convertido em documento Word.
                 """
                 
                 resultado_ia = chamar_gemini_com_retry(client, prompt_sistema)
-                
                 st.session_state["curriculo_gerado"] = resultado_ia
                 st.success("✨ Currículo otimizado com sucesso!")
                 
@@ -128,8 +138,11 @@ if "curriculo_gerado" in st.session_state:
     st.subheader("📄 Resultado Gerado")
     st.text_area("Texto Otimizado:", st.session_state["curriculo_gerado"], height=300)
     
-    st.info(f"Modo selecionado: **{modelo_escolhido}**. O documento gerado respeita as margens e diretrizes do padrão da consultoria.")
-    
+    st.info(f"Modo selecionado: **{modelo_escolhido}**. Escolha abaixo o formato de download desejado.")
+
+    texto_gerado = st.session_state["curriculo_gerado"]
+
+    # --- GERAÇÃO DE WORD (.DOCX) ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.8)
@@ -137,18 +150,25 @@ if "curriculo_gerado" in st.session_state:
         section.left_margin = Inches(0.8)
         section.right_margin = Inches(0.8)
 
-    p_doc = doc.add_paragraph()
-    p_doc.add_run(st.session_state["curriculo_gerado"])
-    
-    import io
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Calibri'
+    font.size = Pt(11)
+    font.color.rgb = RGBColor(51, 51, 51)
+
+    p_corpo = doc.add_paragraph()
+    p_corpo.add_run(texto_gerado)
+
     buffer_word = io.BytesIO()
     doc.save(buffer_word)
     buffer_word.seek(0)
+
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    buffer_pdf = io.BytesIO()
+    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
     
-    st.download_button(
-        label=f"📥 Baixar Currículo em Word ({modelo_escolhido})",
-        data=buffer_word,
-        file_name="curriculo_otimizado_consultoria.docx",
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        type="primary"
-    )
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=16, leading=20, textColor=colors.HexColor("#1A365D"), alignment=1, spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=12, leading=16, textColor=colors.HexColor("#4A5568"), alignment=1, spaceAfter=8)
+    estilo_contato = ParagraphStyle('ContatoEstilo', parent=styles['Normal'], fontSize=9, leading=12, textColor=colors.HexColor("#718096"), alignment=1, spaceAfter=15)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=15, textColor=
