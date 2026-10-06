@@ -247,4 +247,111 @@ if "curriculo_gerado" in st.session_state:
     def criar_icone_email():
         d = Drawing(13, 11)
         d.add(Rect(0, 1, 13, 9, fillColor=colors.black, strokeColor=colors.black))
-        d.
+        d.add(Line(1, 9, 6.5, 5, strokeColor=colors.white, strokeWidth=1))
+        d.add(Line(6.5, 5, 12, 9, strokeColor=colors.white, strokeWidth=1))
+        return d
+
+    def criar_icone_linkedin():
+        d = Drawing(12, 11)
+        d.add(Rect(0, 0, 12, 11, rx=1, ry=1, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(2, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Circle(3, 9, 1, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Rect(6, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
+        return d
+
+    if modelo_escolhido == "Modelo Com Foto" o and foto_arquivo is not None:
+        temp_foto_path = "temp_foto.png"
+        with open(temp_foto_path, "wb") as f:
+            f.write(foto_arquivo.getbuffer())
+        img = RLImage(temp_foto_path, width=55, height=55)
+        coluna_esquerda = [img]
+    else:
+        coluna_esquerda = [
+            Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
+            Paragraph(cargo_txt, estilo_cargo)
+        ]
+
+    tabela_contatos_direita = Table([
+        [Paragraph(cidade_bairro, estilo_contato_dir), criar_icone_casa()],
+        [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
+        [Paragraph(email, estilo_contato_dir), criar_icone_email()],
+        [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
+    ], colWidths=[175, 20])
+    
+    tabela_contatos_direita.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ALIGN', (0,0), (0,-1), 'RIGHT'),
+        ('ALIGN', (1,0), (1,-1), 'CENTER'),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING', (1,0), (1,-1), 4),
+    ]))
+
+    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[345, 195])
+    t_header.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+    
+    story.append(t_header)
+    story.append(Spacer(1, 2))
+    story.append(HRFlowable(width="100%", thickness=0.7, color=cor_total, spaceAfter=4, spaceBefore=0))
+
+    def adicionar_secao(titulo, conteudo_html):
+        if conteudo_html:
+            story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
+            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=3, spaceBefore=1))
+            story.append(Paragraph(conteudo_html, estilo_texto))
+
+    if perfil_txt:
+        paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n\n') if p.strip()]
+        perfil_formatado = "<br/><br/>".join(paragrafos_perfil)
+        adicionar_secao("Perfil Profissional", perfil_formatado)
+
+    if formacao_txt:
+        adicionar_secao("Formação Acadêmica", formacao_txt.replace('\n', '<br/>'))
+
+    if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
+        adicionar_secao("Cursos e Certificações", cursos_txt.replace('\n', '<br/>'))
+
+    if habilidades_txt:
+        hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
+        adicionar_secao("Habilidades e Competências", hab_formatadas)
+
+    if experiencia_txt:
+        story.append(Paragraph("<b>Experiência Profissional</b>", estilo_titulo_secao))
+        story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=3, spaceBefore=1))
+        
+        blocos_exp = experiencia_txt.split("\n\n")
+        for bloco in blocos_exp:
+            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            if not linhas_bloco:
+                continue
+            
+            empresa_periodo = linhas_bloco[0]
+            story.append(Paragraph(f"{empresa_periodo}", estilo_exp_empresa))
+            
+            if len(linhas_bloco) > 1:
+                cargo_linha = linhas_bloco[1]
+                story.append(Paragraph(f"{cargo_linha}", estilo_exp_cargo))
+            
+            for item in linhas_bloco[2:]:
+                item_limpo = item.lstrip('-•* ').strip()
+                story.append(Paragraph(f"• {item_limpo}", estilo_texto))
+            
+            story.append(Spacer(1, 2))
+
+    pdf_doc.build(story)
+    buffer_pdf.seek(0)
+
+    if os.path.exists("temp_foto.png"):
+        os.remove("temp_foto.png")
+
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        st.download_button(
+            label=f"📥 Baixar em Word ({modelo_escolhido})",
+            data=buffer_word,
+            file_name="curriculo_otimizado
