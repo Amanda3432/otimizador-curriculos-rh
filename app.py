@@ -2,7 +2,7 @@ import streamlit as st
 import docx
 from docx.shared import Inches, Pt, RGBColor
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from google import genai
@@ -67,7 +67,6 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# Função atualizada com os modelos atuais do Google AI Studio e rotação de fallback em caso de erro 503
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.1-pro']
     
@@ -83,7 +82,7 @@ def chamar_gemini_com_retry(client, prompt_texto):
                     return response.text
             except Exception as e:
                 erros_acumulados.append(f"[{modelo}] {str(e)}")
-                time.sleep(2) # Pausa curta antes de tentar o próximo passo ou modelo
+                time.sleep(2)
                 continue
                 
     raise Exception(f"Todos os modelos atuais estão ocupados no momento. Detalhes: {erros_acumulados[-1]}")
@@ -100,25 +99,25 @@ if gerar_btn:
                 
                 prompt_sistema = f"""
                 Você é um consultor especialista em RH e Otimização de Currículos ATS.
-                Com base no currículo antigo e na descrição da vaga fornecidos, gere o conteúdo estruturado rigorosamente com os seguintes campos e seções exatas:
+                Com base no currículo antigo e na descrição da vaga fornecidos, gere o conteúdo limpo do currículo seguindo exatamente esta estrutura de seções (use os títulos em letras maiúsculas):
                 
-                [NOME]
-                [CARGO/OBJETIVO] (Máximo 3 opções)
-                [CONTATOS] (Bairro, Cidade | Telefone | E-mail | LinkedIn)
+                NOME COMPLETO
+                CARGO / OBJETIVO
+                CONTATOS
                 
-                [PERFIL PROFISSIONAL]
+                PERFIL PROFISSIONAL
                 (Escrito estritamente em 3ª pessoa: 1º Parágrafo com tempo de atuação e competências comportamentais; 2º Parágrafo com expertises e palavras-chave da vaga; 3º Parágrafo com conhecimentos em sistemas e ferramentas).
                 
-                [FORMAÇÃO ACADÊMICA]
+                FORMAÇÃO ACADÊMICA
                 (Ordem de importância/cronológica. Formato: Nome do curso | Instituição de ensino - Ano de conclusão).
                 
-                [CURSOS E CERTIFICAÇÕES]
+                CURSOS E CERTIFICAÇÕES
                 (Ordem alfabética ou cronológica. Formato: Nome do curso | Instituição de ensino | Ano de conclusão).
                 
-                [HABILIDADES E COMPETÊNCIAS]
+                HABILIDADES E COMPETÊNCIAS
                 (Listar tópicos com as competências técnicas e comportamentais extraídas da vaga).
                 
-                [EXPERIÊNCIA PROFISSIONAL]
+                EXPERIÊNCIA PROFISSIONAL
                 (Ordem cronológica da mais recente para a mais antiga. Empresa | Período e Cargo | Tópicos neutros de atividades).
                 
                 Currículo Antigo:
@@ -165,47 +164,81 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO CONSULTORIA EXATO) ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
     
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=16, leading=20, textColor=colors.HexColor("#1A365D"), alignment=1, spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=12, leading=16, textColor=colors.HexColor("#4A5568"), alignment=1, spaceAfter=8)
-    estilo_contato = ParagraphStyle('ContatoEstilo', parent=styles['Normal'], fontSize=9, leading=12, textColor=colors.HexColor("#718096"), alignment=1, spaceAfter=15)
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=15, textColor=colors.HexColor("#1A365D"), spaceBefore=10, spaceAfter=4, fontName="Helvetica-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor("#2D3748"), spaceAfter=6)
+    # Paleta de cores inspirada no modelo corporativo
+    cor_primaria = colors.HexColor("#2C3E50") # Azul escuro corporativo dos títulos
+    cor_texto = colors.HexColor("#333333")    # Cinza escuro legível para o corpo
+    cor_secundaria = colors.HexColor("#7F8C8D") # Cinza médio para detalhes/contatos
+
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=18, textColor=cor_primaria, fontName="Helvetica-Bold", alignment=0, spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_secundaria, fontName="Helvetica", alignment=0, spaceAfter=4)
+    estilo_contato = ParagraphStyle('ContatoEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_secundaria, alignment=0, spaceAfter=10)
+    
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=14, textColor=cor_primaria, spaceBefore=8, spaceAfter=3, fontName="Helvetica-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9.5, leading=13.5, textColor=cor_texto, spaceAfter=4)
 
     story = []
     
+    # Extração inteligente das primeiras linhas para o cabeçalho personalizado
+    linhas = [l.strip() for l in texto_gerado.split('\n') if l.strip()]
+    nome_candidato = linhas[0] if len(linhas) > 0 else "NOME DO CANDIDATO"
+    cargo_candidato = linhas[1] if len(linhas) > 1 else "Cargo Pretendido"
+    contato_candidato = linhas[2] if len(linhas) > 2 else "Bairro, Cidade | Telefone | E-mail"
+
+    # Se o modelo for com foto, criamos a tabela de cabeçalho lateralizada
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
         
-        img = RLImage(temp_foto_path, width=70, height=70)
-        header_text = Paragraph("<b>NOME DO CANDIDATO</b><br/><font size=10 color='#4A5568'>Cargo Pretendido</font><br/><font size=8 color='#718096'>Mogi das Cruzes - SP | (11) 99999-9999</font>", estilo_texto)
-        t_header = Table([[img, header_text]], colWidths=[80, 400])
+        img = RLImage(temp_foto_path, width=65, height=65)
+        header_content = Paragraph(f"<b>{nome_candidato}</b><br/><font size=10 color='#7F8C8D'>{cargo_candidato}</font><br/><font size=8 color='#95A5A6'>{contato_candidato}</font>", estilo_texto)
+        t_header = Table([[img, header_content]], colWidths=[75, 435])
         t_header.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (0,0), (0,0), 'CENTER'),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('LEFTPADDING', (1,0), (1,0), 6),
         ]))
         story.append(t_header)
-        story.append(Spacer(1, 10))
-        if os.path.exists(temp_foto_path):
-            os.remove(temp_foto_path)
+        story.append(Spacer(1, 8))
     else:
-        story.append(Paragraph("<b>NOME DO CANDIDATO</b>", estilo_nome))
-        story.append(Paragraph("Cargo / Objetivo Profissional", estilo_cargo))
-        story.append(Paragraph("Bairro, Cidade | Telefone | E-mail | LinkedIn", estilo_contato))
+        story.append(Paragraph(f"<b>{nome_candidato}</b>", estilo_nome))
+        story.append(Paragraph(cargo_candidato, estilo_cargo))
+        story.append(Paragraph(contato_candidato, estilo_contato))
+        # Traço elegante abaixo do cabeçalho igual ao modelo
+        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_primaria, spaceAfter=8, spaceBefore=0))
 
-    story.append(Spacer(1, 10))
-    story.append(Paragraph("<b>PERFIL PROFISSIONAL</b>", estilo_titulo_secao))
-    story.append(Paragraph(texto_gerado.replace('\n', '<br/>'), estilo_texto))
+    # Renderização organizada das seções e títulos com traço separador
+    corpo_secoes_texto = "\n".join(linhas[3:]) if len(linhas) > 3 else texto_gerado
+    
+    # Processamento limpo por blocos de seções
+    secoes = corpo_secoes_texto.split("\n\n")
+    for bloco in secoes:
+        linhas_bloco = bloco.split("\n")
+        if not linhas_bloco:
+            continue
+        
+        titulo = linhas_bloco[0].replace("**", "").strip()
+        # Se for um título de seção conhecido
+        if any(t in titulo.upper() for t in ["PERFIL", "FORMAÇÃO", "CURSOS", "HABILIDADES", "EXPERIÊNCIA"]):
+            story.append(Paragraph(f"<b>{titulo.upper()}</b>", estilo_titulo_secao))
+            story.append(HRFlowable(width="100%", thickness=0.5, color=cor_secundaria, spaceAfter=4, spaceBefore=1))
+            conteudo_bloco = "<br/>".join(linhas_bloco[1:])
+            story.append(Paragraph(conteudo_bloco, estilo_texto))
+        else:
+            story.append(Paragraph(bloco.replace("\n", "<br/>"), estilo_texto))
 
     pdf_doc.build(story)
     buffer_pdf.seek(0)
 
+    if os.path.exists("temp_foto.png"):
+        os.remove("temp_foto.png")
+
+    # Botões de Download lado a lado
     col_d1, col_d2 = st.columns(2)
     with col_d1:
         st.download_button(
