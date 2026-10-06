@@ -259,7 +259,7 @@ if "curriculo_gerado" in st.session_state:
         d.add(Rect(6, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
         return d
 
-    if modelo_escolhido == "Modelo Com Foto" o and foto_arquivo is not None:
+    if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
