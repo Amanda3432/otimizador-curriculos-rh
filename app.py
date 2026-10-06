@@ -60,10 +60,9 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# Função para chamar o Gemini com os modelos atualizados e retry
+# Função robusta com os modelos corretos e compatíveis do SDK moderno
 def chamar_gemini_com_retry(client, prompt_texto):
-    # Modelos atualizados compatíveis com a biblioteca moderna do Gemini
-    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-flash-latest']
     
     erros_acumulados = []
     for modelo in modelos_para_tentar:
