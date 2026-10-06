@@ -70,7 +70,7 @@ with col2:
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
-    modelos_para_tentar = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.1-pro']
+    modelos_para_tentar = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-2.5-flash']
     
     erros_acumulados = []
     for modelo in modelos_para_tentar:
