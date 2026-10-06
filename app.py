@@ -183,7 +183,7 @@ if "curriculo_gerado" in st.session_state:
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
-    cor_total = colors.HexColor("#000000") # Preto sólido idêntico à imagem de referência
+    cor_total = colors.HexColor("#000000")
 
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
@@ -215,7 +215,6 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Funções construtoras dos ícones gráficos idênticos aos da referência
     def criar_icone_casa():
         d = Drawing(12, 11)
         d.add(Polygon([1, 4, 6, 0, 11, 4], fillColor=colors.black, strokeColor=colors.black))
@@ -242,77 +241,4 @@ if "curriculo_gerado" in st.session_state:
         p.moveTo(1, 9)
         p.lineTo(6.5, 5)
         p.lineTo(12, 9)
-        d.add(p)
-        return d
-
-    def criar_icone_linkedin():
-        d = Drawing(12, 11)
-        d.add(Rect(0, 0, 12, 11, rx=1, ry=1, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(2, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Circle(3, 9, 1, fillColor=colors.white, strokeColor=colors.white))
-        p = Path(fillColor=colors.white, strokeColor=colors.white)
-        p.moveTo(6, 3)
-        p.lineTo(8, 3)
-        p.lineTo(8, 5)
-        p.curveTo(8.5, 4, 9.5, 3, 10.5, 4)
-        p.lineTo(10.5, 8)
-        p.lineTo(8.5, 8)
-        p.lineTo(8.5, 5.5)
-        p.curveTo(8.5, 4.5, 7.5, 4.5, 7.5, 5.5)
-        p.lineTo(7.5, 8)
-        p.lineTo(6, 8)
-        d.add(p)
-        return d
-
-    if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
-        temp_foto_path = "temp_foto.png"
-        with open(temp_foto_path, "wb") as f:
-            f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=55, height=55)
-        coluna_esquerda = [img]
-    else:
-        coluna_esquerda = [
-            Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
-            Paragraph(cargo_txt, estilo_cargo)
-        ]
-
-    tabela_contatos_direita = Table([
-        [Paragraph(cidade_bairro, estilo_contato_dir), criar_icone_casa()],
-        [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
-        [Paragraph(email, estilo_contato_dir), criar_icone_email()],
-        [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[175, 20])
-    
-    tabela_contatos_direita.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (0,0), (0,-1), 'RIGHT'),
-        ('ALIGN', (1,0), (1,-1), 'CENTER'),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ('LEFTPADDING', (1,0), (1,-1), 4),
-    ]))
-
-    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[345, 195])
-    t_header.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('ALIGN', (1,0), (1,0), 'RIGHT'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-    ]))
-    
-    story.append(t_header)
-    story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=0.7, color=cor_total, spaceAfter=4, spaceBefore=0))
-
-    def adicionar_secao(titulo, conteudo_html):
-        if conteudo_html:
-            story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
-            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=3, spaceBefore=1))
-            story.append(Paragraph(conteudo_html, estilo_texto))
-
-    if perfil_txt:
-        paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n\n') if p.strip()]
-        perfil_formatado = "<br/><br/>".join(paragrafos_perfil)
-        adicionar_secao("Perfil Profissional", perfil_formatado)
-
-    if formacao_txt:
+        d.
