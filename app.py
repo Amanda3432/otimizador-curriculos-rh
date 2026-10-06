@@ -9,11 +9,12 @@ from google import genai
 import time
 import io
 import os
+import re
 
-st.set_page_config(page_title="Otimizador de Currículos - Consultoria", page_icon="📄", layout="wide")
+st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
-st.title("📄 Otimizador de Currículos Profissional (Padrão Consultoria)")
-st.markdown("Ferramenta automatizada para otimização de currículos com layout personalizado e exportação em Word e PDF.")
+st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
+st.markdown("Ferramenta automatizada para otimização de currículos estritamente alinhada ao tutorial e layout clássico com ícones.")
 
 # --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
 st.sidebar.header("🔑 Configuração da API")
@@ -63,7 +64,7 @@ with col1:
 
 with col2:
     st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema vai reestruturar o perfil em 3 parágrafos, ajustar as experiências e gerar o documento estruturado nos formatos Word e PDF com o layout exato da consultoria.")
+    st.info("O sistema seguirá rigorosamente as regras da Sala de Emprego, com ícones de contato (casinha, telefone, e-mail, LinkedIn) e formatação idêntica ao modelo.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -93,32 +94,44 @@ if gerar_btn:
     elif not curriculo_antigo or not descricao_vaga:
         st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
-        with st.spinner("A processar e reestruturando o currículo de acordo com o padrão visual da consultoria..."):
+        with st.spinner("A processar e reestruturando o currículo de acordo com o tutorial oficial..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
                 prompt_sistema = f"""
-                Você é um consultor especialista em RH e Otimização de Currículos ATS.
-                Com base no currículo antigo e na descrição da vaga fornecidos, gere o conteúdo limpo do currículo seguindo exatamente esta estrutura de seções (use os títulos em letras maiúsculas):
+                Você é um consultor especialista em RH seguindo rigorosamente o tutorial de elaboração de currículos da Sala de Emprego.
+                Com base no currículo antigo e na descrição da vaga fornecidos, gere o conteúdo limpo do currículo seguindo estritamente este formato de blocos com tags em maiúsculas:
                 
-                NOME COMPLETO
-                CARGO / OBJETIVO
-                CONTATOS
+                [NOME]
+                Nome Completo do Candidato
                 
-                PERFIL PROFISSIONAL
-                (Escrito estritamente em 3ª pessoa: 1º Parágrafo com tempo de atuação e competências comportamentais; 2º Parágrafo com expertises e palavras-chave da vaga; 3º Parágrafo com conhecimentos em sistemas e ferramentas).
+                [CARGO]
+                Cargo ou Objetivo Profissional (Máximo de 3 opções separadas por barra)
                 
-                FORMAÇÃO ACADÊMICA
-                (Ordem de importância/cronológica. Formato: Nome do curso | Instituição de ensino - Ano de conclusão).
+                [CONTATOS]
+                Bairro, Cidade | Telefone | E-mail | LinkedIn
                 
-                CURSOS E CERTIFICAÇÕES
-                (Ordem alfabética ou cronológica. Formato: Nome do curso | Instituição de ensino | Ano de conclusão).
+                [PERFIL PROFISSIONAL]
+                (Escrito estritamente em 3ª pessoa e dividido em exatamente 3 parágrafos, sem quebras extras dentro do mesmo parágrafo):
+                1º Parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando-se pela sua capacidade [duas ou três competências comportamentais importantes para o cargo], garantindo que [benefício dessas competências para a função].
+                2º Parágrafo: Expertises em [atividades chaves, competências e palavras-chave que mais se repetem na descrição da vaga].
+                3º Parágrafo: Conhecimentos em [sistemas, ferramentas e fundamentos teóricos exigidos].
                 
-                HABILIDADES E COMPETÊNCIAS
-                (Listar tópicos com as competências técnicas e comportamentais extraídas da vaga).
+                [FORMAÇÃO ACADÊMICA]
+                Nome do curso | Instituição de ensino - Ano de conclusão
                 
-                EXPERIÊNCIA PROFISSIONAL
-                (Ordem cronológica da mais recente para a mais antiga. Empresa | Período e Cargo | Tópicos neutros de atividades).
+                [CURSOS E CERTIFICAÇÕES]
+                Nome do curso | Instituição de ensino - Ano de conclusão
+                
+                [HABILIDADES E COMPETÊNCIAS]
+                - Competência técnica ou comportamental 1
+                - Competência técnica ou comportamental 2
+                
+                [EXPERIÊNCIA PROFISSIONAL]
+                Empresa | Mês/Ano de entrada - Mês/Ano de saída (ou Atual)
+                Cargo (colocar em itálico no layout)
+                - Atividade neutra e profissional 1 baseada em anúncios de vagas
+                - Atividade neutra e profissional 2 baseada em anúncios de vagas
                 
                 Currículo Antigo:
                 {curriculo_antigo}
@@ -164,73 +177,120 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO CONSULTORIA EXATO) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO EXATO COM ÍCONES E ITÁLICOS) ---
     buffer_pdf = io.BytesIO()
-    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
-    # Paleta de cores inspirada no modelo corporativo
-    cor_primaria = colors.HexColor("#2C3E50") # Azul escuro corporativo dos títulos
-    cor_texto = colors.HexColor("#333333")    # Cinza escuro legível para o corpo
-    cor_secundaria = colors.HexColor("#7F8C8D") # Cinza médio para detalhes/contatos
+    cor_primaria = colors.HexColor("#000000") 
+    cor_texto = colors.HexColor("#222222")    
+    cor_secundaria = colors.HexColor("#555555") 
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=18, textColor=cor_primaria, fontName="Helvetica-Bold", alignment=0, spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_secundaria, fontName="Helvetica", alignment=0, spaceAfter=4)
-    estilo_contato = ParagraphStyle('ContatoEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=cor_secundaria, alignment=0, spaceAfter=10)
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_primaria, fontName="Helvetica-Bold", spaceAfter=1)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_secundaria, fontName="Helvetica", spaceAfter=2)
+    estilo_contato = ParagraphStyle('ContatoEstilo', parent=styles['Normal'], fontSize=8, leading=11, textColor=cor_secundaria, alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=14, textColor=cor_primaria, spaceBefore=8, spaceAfter=3, fontName="Helvetica-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9.5, leading=13.5, textColor=cor_texto, spaceAfter=4)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=12, textColor=cor_primaria, spaceBefore=6, spaceAfter=2, fontName="Helvetica-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=8.5, leading=11.5, textColor=cor_texto, spaceAfter=2.5, alignment=4)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=colors.HexColor("#111111"), fontName="Helvetica-Oblique", spaceAfter=1) # Exatamente em itálico conforme o modelo
 
     story = []
-    
-    # Extração inteligente das primeiras linhas para o cabeçalho personalizado
-    linhas = [l.strip() for l in texto_gerado.split('\n') if l.strip()]
-    nome_candidato = linhas[0] if len(linhas) > 0 else "NOME DO CANDIDATO"
-    cargo_candidato = linhas[1] if len(linhas) > 1 else "Cargo Pretendido"
-    contato_candidato = linhas[2] if len(linhas) > 2 else "Bairro, Cidade | Telefone | E-mail"
 
-    # Se o modelo for com foto, criamos a tabela de cabeçalho lateralizada
+    def extrair_tag(tag, texto):
+        match = re.search(rf'\[{tag}\](.*?)(?=\[|$)', texto, re.DOTALL)
+        return match.group(1).strip() if match else ""
+
+    nome_txt = extrair_tag("NOME", texto_gerado) or "NOME DO CANDIDATO"
+    cargo_txt = extrair_tag("CARGO", texto_gerado) or "Cargo Profissional"
+    contato_txt = extrair_tag("CONTATOS", texto_gerado) or "Bairro, Cidade | Telefone | E-mail | LinkedIn"
+    perfil_txt = extrair_tag("PERFIL PROFISSIONAL", texto_gerado)
+    formacao_txt = extrair_tag("FORMAÇÃO ACADÊMICA", texto_gerado)
+    cursos_txt = extrair_tag("CURSOS E CERTIFICAÇÕES", texto_gerado)
+    habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
+    experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
+
+    # Processamento dos contactos para adicionar os ícones visuais exigidos (Casinha, Telefone, E-mail, LinkedIn)
+    partes_contato = [p.strip() for p in contato_txt.replace('|', ',').split(',') if p.strip()]
+    contatos_com_icones = []
+    
+    # Mapeamento e injeção visual dos ícones idênticos ao modelo
+    icones_unicos = ["🏠 ", "📞 ", "✉️ ", "🔗 "]
+    for i, parte in enumerate(partes_contato):
+        icone = icones_unicos[i] if i < len(icones_unicos) else "• "
+        contatos_com_icones.append(f"{icone}{parte}")
+    
+    contato_formatado_com_icones = "<br/>".join(contatos_com_icones)
+
+    # Cabeçalho com tabela idêntica ao modelo clássico
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
-        
-        img = RLImage(temp_foto_path, width=65, height=65)
-        header_content = Paragraph(f"<b>{nome_candidato}</b><br/><font size=10 color='#7F8C8D'>{cargo_candidato}</font><br/><font size=8 color='#95A5A6'>{contato_candidato}</font>", estilo_texto)
-        t_header = Table([[img, header_content]], colWidths=[75, 435])
-        t_header.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (0,0), (0,0), 'LEFT'),
-            ('LEFTPADDING', (1,0), (1,0), 6),
-        ]))
-        story.append(t_header)
-        story.append(Spacer(1, 8))
+        img = RLImage(temp_foto_path, width=55, height=55)
+        coluna_esquerda = [img]
     else:
-        story.append(Paragraph(f"<b>{nome_candidato}</b>", estilo_nome))
-        story.append(Paragraph(cargo_candidato, estilo_cargo))
-        story.append(Paragraph(contato_candidato, estilo_contato))
-        # Traço elegante abaixo do cabeçalho igual ao modelo
-        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_primaria, spaceAfter=8, spaceBefore=0))
+        coluna_esquerda = [
+            Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
+            Paragraph(cargo_txt, estilo_cargo)
+        ]
 
-    # Renderização organizada das seções e títulos com traço separador
-    corpo_secoes_texto = "\n".join(linhas[3:]) if len(linhas) > 3 else texto_gerado
+    coluna_direita = [Paragraph(contato_formatado_com_icones, estilo_contato)]
     
-    # Processamento limpo por blocos de seções
-    secoes = corpo_secoes_texto.split("\n\n")
-    for bloco in secoes:
-        linhas_bloco = bloco.split("\n")
-        if not linhas_bloco:
-            continue
+    t_header = Table([ [coluna_esquerda, coluna_direita] ], colWidths=[350, 190])
+    t_header.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+    story.append(t_header)
+    story.append(Spacer(1, 2))
+    story.append(HRFlowable(width="100%", thickness=0.7, color=cor_primaria, spaceAfter=4, spaceBefore=0))
+
+    def adicionar_secao(titulo, conteudo_html):
+        if conteudo_html:
+            story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
+            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_secundaria, spaceAfter=3, spaceBefore=1))
+            story.append(Paragraph(conteudo_html, estilo_texto))
+
+    if perfil_txt:
+        paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n\n') if p.strip()]
+        perfil_formatado = "<br/><br/>".join(paragrafos_perfil)
+        adicionar_secao("PERFIL PROFISSIONAL", perfil_formatado)
+
+    if formacao_txt:
+        adicionar_secao("FORMAÇÃO ACADÊMICA", formacao_txt.replace('\n', '<br/>'))
+
+    if cursos_txt:
+        adicionar_secao("CURSOS E CERTIFICAÇÕES", cursos_txt.replace('\n', '<br/>'))
+
+    if habilidades_txt:
+        hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
+        adicionar_secao("HABILIDADES E COMPETÊNCIAS", hab_formatadas)
+
+    if experiencia_txt:
+        story.append(Paragraph("<b>EXPERIÊNCIA PROFISSIONAL</b>", estilo_titulo_secao))
+        story.append(HRFlowable(width="100%", thickness=0.3, color=cor_secundaria, spaceAfter=3, spaceBefore=1))
         
-        titulo = linhas_bloco[0].replace("**", "").strip()
-        # Se for um título de seção conhecido
-        if any(t in titulo.upper() for t in ["PERFIL", "FORMAÇÃO", "CURSOS", "HABILIDADES", "EXPERIÊNCIA"]):
-            story.append(Paragraph(f"<b>{titulo.upper()}</b>", estilo_titulo_secao))
-            story.append(HRFlowable(width="100%", thickness=0.5, color=cor_secundaria, spaceAfter=4, spaceBefore=1))
-            conteudo_bloco = "<br/>".join(linhas_bloco[1:])
-            story.append(Paragraph(conteudo_bloco, estilo_texto))
-        else:
-            story.append(Paragraph(bloco.replace("\n", "<br/>"), estilo_texto))
+        blocos_exp = experiencia_txt.split("\n\n")
+        for bloco in blocos_exp:
+            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            if not linhas_bloco:
+                continue
+            
+            empresa_periodo = linhas_bloco[0]
+            story.append(Paragraph(f"<b>{empresa_periodo}</b>", estilo_texto))
+            
+            if len(linhas_bloco) > 1:
+                cargo_linha = linhas_bloco[1]
+                # Cargo estritamente em itálico conforme o modelo clássico
+                story.append(Paragraph(f"{cargo_linha}", estilo_exp_cargo))
+            
+            for item in linhas_bloco[2:]:
+                item_limpo = item.lstrip('-•* ').strip()
+                story.append(Paragraph(f"• {item_limpo}", estilo_texto))
+            
+            story.append(Spacer(1, 2))
 
     pdf_doc.build(story)
     buffer_pdf.seek(0)
