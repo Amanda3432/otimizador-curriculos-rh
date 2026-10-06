@@ -50,7 +50,7 @@ modelo_escolhido = st.sidebar.radio(
 foto_arquivo = None
 if modelo_escolhido == "Modelo Com Foto":
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🖼️️ Foto do Candidato")
+    st.sidebar.markdown("### 🖼️ Foto do Candidato")
     foto_arquivo = st.sidebar.file_uploader("Carregue a foto (JPG ou PNG)", type=["jpg", "jpeg", "png"])
 
 ativa_api_key = st.session_state.get("api_key", "")
@@ -65,7 +65,7 @@ with col1:
 
 with col2:
     st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas e o ícone exato do LinkedIn integrado automaticamente.")
+    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas e ícones padronizados integrados automaticamente.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -229,24 +229,25 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
-    # Funções para gerar os ícones vetoriais perfeitos e estáveis
+    # Funções de ícones padronizados exatamente no tamanho 13x13 (mesmo padrão elegante do LinkedIn)
     def criar_icone_casa():
-        d = Drawing(13, 12)
-        d.add(Polygon([0, 4.5, 6.5, 0, 13, 4.5], fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(2.5, 0, 8, 6, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(4.5, 0, 3.5, 3.5, fillColor=colors.white, strokeColor=colors.white))
+        d = Drawing(13, 13)
+        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Polygon([3, 7.5, 6.5, 4.5, 10, 7.5], fillColor=colors.white, strokeColor=colors.white))
+        d.add(Rect(4.5, 2.5, 4, 4, fillColor=colors.white, strokeColor=colors.white))
         return d
 
     def criar_icone_telefone():
-        d = Drawing(13, 12)
-        d.add(Polygon([1, 8, 4, 11, 7, 8, 5, 6, 8, 3, 10, 5, 12, 2, 9, 0, 7, 1, 3, 5], fillColor=colors.black, strokeColor=colors.black))
+        d = Drawing(13, 13)
+        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Polygon([3.5, 9, 5.5, 11, 7.5, 9, 6.5, 8, 8.5, 6, 9.5, 7, 10.5, 5, 8.5, 3, 7.5, 4, 5, 6.5], fillColor=colors.white, strokeColor=colors.white))
         return d
 
     def criar_icone_email():
-        d = Drawing(13, 11)
-        d.add(Rect(0, 0, 13, 11, rx=1, ry=1, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Line(1.5, 9, 6.5, 4.5, strokeColor=colors.white, strokeWidth=1.5))
-        d.add(Line(6.5, 4.5, 11.5, 9, strokeColor=colors.white, strokeWidth=1.5))
+        d = Drawing(13, 13)
+        d.add(Rect(0, 0, 13, 13, rx=1.5, ry=1.5, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(2.5, 3.5, 8, 6, rx=0.5, ry=0.5, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Polygon([2.8, 9.2, 6.5, 6.5, 10.2, 9.2], fillColor=colors.black, strokeColor=colors.black))
         return d
 
     def criar_icone_linkedin():
