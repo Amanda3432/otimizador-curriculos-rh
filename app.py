@@ -1,7 +1,6 @@
 import streamlit as st
 import docx
 from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -171,4 +170,55 @@ if "curriculo_gerado" in st.session_state:
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=16, leading=20, textColor=colors.HexColor("#1A365D"), alignment=1, spaceAfter=2)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=12, leading=16, textColor=colors.HexColor("#4A5568"), alignment=1, spaceAfter=8)
     estilo_contato = ParagraphStyle('ContatoEstilo', parent=styles['Normal'], fontSize=9, leading=12, textColor=colors.HexColor("#718096"), alignment=1, spaceAfter=15)
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=15, textColor=
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=15, textColor=colors.HexColor("#1A365D"), spaceBefore=10, spaceAfter=4, fontName="Helvetica-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor("#2D3748"), spaceAfter=6)
+
+    story = []
+    
+    if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
+        temp_foto_path = "temp_foto.png"
+        with open(temp_foto_path, "wb") as f:
+            f.write(foto_arquivo.getbuffer())
+        
+        img = RLImage(temp_foto_path, width=70, height=70)
+        header_text = Paragraph("<b>NOME DO CANDIDATO</b><br/><font size=10 color='#4A5568'>Cargo Pretendido</font><br/><font size=8 color='#718096'>Mogi das Cruzes - SP | (11) 99999-9999</font>", estilo_texto)
+        t_header = Table([[img, header_text]], colWidths=[80, 400])
+        t_header.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (0,0), 'CENTER'),
+        ]))
+        story.append(t_header)
+        story.append(Spacer(1, 10))
+        if os.path.exists(temp_foto_path):
+            os.remove(temp_foto_path)
+    else:
+        story.append(Paragraph("<b>NOME DO CANDIDATO</b>", estilo_nome))
+        story.append(Paragraph("Cargo / Objetivo Profissional", estilo_cargo))
+        story.append(Paragraph("Bairro, Cidade | Telefone | E-mail | LinkedIn", estilo_contato))
+
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("<b>PERFIL PROFISSIONAL</b>", estilo_titulo_secao))
+    story.append(Paragraph(texto_gerado.replace('\n', '<br/>'), estilo_texto))
+
+    pdf_doc.build(story)
+    buffer_pdf.seek(0)
+
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        st.download_button(
+            label=f"📥 Baixar em Word ({modelo_escolhido})",
+            data=buffer_word,
+            file_name="curriculo_otimizado.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            type="primary",
+            use_container_width=True
+        )
+    with col_d2:
+        st.download_button(
+            label=f"📥 Baixar em PDF ({modelo_escolhido})",
+            data=buffer_pdf,
+            file_name="curriculo_otimizado.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
