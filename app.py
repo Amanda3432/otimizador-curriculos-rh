@@ -178,7 +178,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO EXATO COM FONTES TIMES E PRETO SÓLIDO) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -241,4 +241,22 @@ if "curriculo_gerado" in st.session_state:
         p.moveTo(1, 9)
         p.lineTo(6.5, 5)
         p.lineTo(12, 9)
-        d.
+        d.add(p)
+        return d
+
+    def criar_icone_linkedin():
+        d = Drawing(12, 11)
+        d.add(Rect(0, 0, 12, 11, rx=1, ry=1, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(2, 3, 2, 5, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Circle(3, 9, 1, fillColor=colors.white, strokeColor=colors.white))
+        p = Path(fillColor=colors.white, strokeColor=colors.white)
+        p.moveTo(6, 3)
+        p.lineTo(8, 3)
+        p.lineTo(8, 5)
+        p.curveTo(8.5, 4, 9.5, 3, 10.5, 4)
+        p.lineTo(10.5, 8)
+        p.lineTo(8.5, 8)
+        p.lineTo(8.5, 5.5)
+        p.curveTo(8.5, 4.5, 7.5, 4.5, 7.5, 5.5)
+        p.lineTo(7.5, 8)
+        p.lineTo(
