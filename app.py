@@ -93,48 +93,50 @@ if gerar_btn:
     if not ativa_api_key:
         st.error("⚠️ Por favor, insira a sua Chave de API na barra lateral para continuar.")
     elif not curriculo_antigo or not descricao_vaga:
-        st.warning("⚠️️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
+        st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
         with st.spinner("A processar e reestruturando o currículo de acordo com o padrão visual oficial..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
                 prompt_sistema = f"""
-                Você é um consultor especialista em RH seguindo rigorosamente o tutorial de elaboração de currículos da Sala de Emprego.
-                Com base no currículo antigo e na descrição da vaga fornecidos, gere o conteúdo limpo do currículo seguindo estritamente este formato de blocos com tags em maiúsculas:
+                Você é um consultor especialista em RH. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga desejada.
+                RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte apenas a linguagem para ficar profissional e alinhada à vaga.
+                
+                Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
                 [NOME]
-                Nome Completo do Candidato
+                [Nome real do candidato extraído do currículo antigo]
                 
                 [CARGO]
-                Cargo ou Objetivo Profissional (Máximo de 3 opções separadas por barra)
+                [Cargo ou até 3 opções baseadas na vaga e na experiência real, separadas por barra]
                 
                 [CONTATOS]
-                Bairro, Cidade | Telefone | E-mail | LinkedIn
+                [Bairro, Cidade | Telefone | E-mail | LinkedIn reais extraídos do currículo]
                 
                 [PERFIL PROFISSIONAL]
-                (Escrito estritamente em 3ª pessoa e dividido em exatamente 3 parágrafos, sem quebras extras dentro do mesmo parágrafo):
-                1º Parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando-se pela sua capacidade [duas ou três competências comportamentais importantes para o cargo], garantindo que [benefício dessas competências para a função].
-                2º Parágrafo: Expertises em [atividades chaves, competências e palavras-chave que mais se repetem na descrição da vaga].
-                3º Parágrafo: Conhecimentos em [sistemas, ferramentas e fundamentos teóricos exigidos].
+                (Escrito estritamente em 3ª pessoa e dividido em exatamente 3 parágrafos, sem quebras extras dentro do mesmo parágrafo, baseando-se no histórico real do candidato):
+                1º Parágrafo: Profissional atuante na área [cargo/objetivo], destacando-se pela capacidade em [competências reais do candidato], garantindo eficiência nas rotinas da área.
+                2º Parágrafo: Expertises em [atividades e competências reais do candidato alinhadas aos requisitos da vaga].
+                3º Parágrafo: Conhecimentos em [ferramentas, sistemas e fundamentos reais apresentados no histórico].
                 
                 [FORMAÇÃO ACADÊMICA]
-                Nome do curso | Instituição de ensino - Ano de conclusão
+                [Curso real | Instituição real - Ano real]
                 
                 [CURSOS E CERTIFICAÇÕES]
-                Nome do curso | Instituição de ensino - Ano de conclusão
+                [Curso real | Instituição real - Ano real] (Apenas se houver no original)
                 
                 [HABILIDADES E COMPETÊNCIAS]
-                - Competência técnica ou comportamental 1
-                - Competência técnica ou comportamental 2
+                - [Competência real 1]
+                - [Competência real 2]
                 
                 [EXPERIÊNCIA PROFISSIONAL]
-                Empresa | Mês/Ano de entrada - Mês/Ano de saída (ou Atual)
-                Cargo
-                - Atividade neutra e profissional 1 baseada em anúncios de vagas
-                - Atividade neutra e profissional 2 baseada em anúncios de vagas
+                [Empresa real] | [Período real]
+                [Cargo real]
+                - [Atividade real reescrita de forma neutra e profissional]
+                - [Atividade real reescrita de forma neutra e profissional]
                 
-                Currículo Antigo:
+                Currículo Antigo do Cliente:
                 {curriculo_antigo}
                 
                 Descrição da Vaga / Requisitos:
@@ -178,7 +180,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (PADRÃO EXATO COM FONTES TIMES, CORES PRETAS E ÍCONES) ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -197,7 +199,7 @@ if "curriculo_gerado" in st.session_state:
     story = []
 
     def extrair_tag(tag, texto):
-        match = re.search(rf'\[{tag}\](.*?)(?=\[|$)', texto, re.DOTALL)
+        match = re.search(rf'\[{tag}\]\s*(.*?)(?=\[|$)', texto, re.DOTALL)
         return match.group(1).strip() if match else ""
 
     nome_txt = extrair_tag("NOME", texto_gerado) or "NOME DO CANDIDATO"
@@ -215,6 +217,7 @@ if "curriculo_gerado" in st.session_state:
     email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
     linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
 
+    # Funções para gerar os ícones vetoriais em preto puro (mesma escala e padrão visual)
     def criar_icone_casa():
         d = Drawing(12, 11)
         d.add(Polygon([1, 4, 6, 0, 11, 4], fillColor=colors.black, strokeColor=colors.black))
@@ -295,7 +298,7 @@ if "curriculo_gerado" in st.session_state:
     if formacao_txt:
         adicionar_secao("Formação Acadêmica", formacao_txt.replace('\n', '<br/>'))
 
-    if cursos_txt:
+    if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
         adicionar_secao("Cursos e Certificações", cursos_txt.replace('\n', '<br/>'))
 
     if habilidades_txt:
