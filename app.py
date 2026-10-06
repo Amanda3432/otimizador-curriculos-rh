@@ -354,4 +354,17 @@ if "curriculo_gerado" in st.session_state:
         st.download_button(
             label=f"📥 Baixar em Word ({modelo_escolhido})",
             data=buffer_word,
-            file_name="curriculo_otimizado
+            file_name="curriculo_otimizado.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            type="primary",
+            use_container_width=True
+        )
+    with col_d2:
+        st.download_button(
+            label=f"📥 Baixar em PDF ({modelo_escolhido})",
+            data=buffer_pdf,
+            file_name="curriculo_otimizado.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
