@@ -7,7 +7,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from google import genai
-from google.genai import errors
 import time
 
 st.set_page_config(page_title="Otimizador de Currículos - Consultoria", page_icon="📄", layout="wide")
@@ -18,13 +17,17 @@ st.markdown("Ferramenta automatizada para otimização de currículos alinhada a
 # --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
 st.sidebar.header("🔑 Configuração da API")
 
-# Tenta carregar a chave automaticamente dos segredos do Streamlit se existir, senão usa o campo de texto
+# Tenta carregar a chave automaticamente dos segredos do Streamlit se existir
 default_api_key = ""
 try:
     if "GEMINI_API_KEY" in st.secrets:
         default_api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
     pass
+
+# Se já houver chave salva na sessão, usa ela como padrão para não precisar redigitar
+if "api_key" in st.session_state and st.session_state["api_key"]:
+    default_api_key = st.session_state["api_key"]
 
 api_key_input = st.sidebar.text_input(
     "Insira sua Google Gemini API Key", 
@@ -33,16 +36,15 @@ api_key_input = st.sidebar.text_input(
     help="Cole aqui a sua chave do Google AI Studio (começa com AQ... ou AIza...)"
 )
 
+if api_key_input:
+    st.session_state["api_key"] = api_key_input
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📋 Modelos Disponíveis")
 modelo_escolhido = st.sidebar.radio(
     "Escolha o formato de saída:",
     ("Modelo Clássico (Sem Foto)", "Modelo Com Foto")
 )
-
-# Se o usuário preencheu a chave, guarda na sessão para não precisar digitar toda vez
-if api_key_input:
-    st.session_state["api_key"] = api_key_input
 
 ativa_api_key = st.session_state.get("api_key", "")
 
@@ -74,7 +76,6 @@ def chamar_gemini_com_retry(client, prompt_texto):
                 if response and response.text:
                     return response.text
             except Exception as e:
-                # Se for erro 503 ou sobrecarga, aguarda alguns segundos e tenta novamente
                 time.sleep(2)
                 continue
     raise Exception("Não foi possível gerar o conteúdo devido a instabilidade temporária na API. Tente novamente em instantes.")
@@ -83,27 +84,27 @@ if gerar_btn:
     if not ativa_api_key:
         st.error("⚠️ Por favor, insira a sua Chave de API na barra lateral para continuar.")
     elif not curriculo_antigo or not descricao_vaga:
-        st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
+        st.warning("⚠️️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
         with st.spinner("A processar e reestruturando o currículo de acordo com os padrões da consultoria..."):
             try:
-                # Inicializa o cliente do Gemini com a nova biblioteca google-genai
                 client = genai.Client(api_key=ativa_api_key)
                 
-                # Prompt estruturado com base nas regras enviadas
+                # Prompt estruturado com base nas regras da consultoria
                 prompt_sistema = f"""
                 Você é um consultor especialista em RH e Otimização de Currículos ATS.
                 Com base no currículo antigo e na descrição da vaga fornecidos abaixo, gere um currículo reestruturado estritamente seguindo estas regras:
                 
-                1. DADOS PESSOAIS: Extraia Nome, Bairro/Cidade, Telefone, E-mail e LinkedIn (com hiperlinks se possível).
-                2. OBJETIVO: Coloque o cargo ou área pretendida (máximo 3 opções).
-                3. PERFIL PROFISSIONAL (Escrito estritamente em 3ª pessoa):
-                   - 1º Parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando competências comportamentais importantes.
-                   - 2º Parágrafo: Expertises detalhadas com base nas atividades-chave e palavras-chave que mais se repetem na descrição da vaga.
-                   - 3º Parágrafo: Conhecimentos em sistemas e ferramentas teóricas relevantes.
-                4. FORMAÇÃO ACADÊMICA: Ordem de importância/cronológica (Pós-doutorado, Doutorado, Mestrado, Pós-graduação, Graduação, Técnico). Não incluir ensino médio se houver nível superior/técnico. Formato: Nome do curso | Instituição de ensino - Ano de conclusão.
-                5. CURSOS E CERTIFICAÇÕES: Ordem alfabética ou cronológica. Formato: Nome do curso | Instituição de ensino | Ano de conclusão (com validade se for certificação).
-                6. EXPERIÊNCIAS PROFISSIONAIS: Ordem cronológica da mais recente para a mais antiga. Descrições escritas em tópicos, neutras e profissionais baseadas nas exigências da vaga (evitar deixar igual ao original).
+                1. FORMATO ESCOLHIDO: {modelo_escolhido}.
+                2. DADOS PESSOAIS: Extraia Nome, Bairro/Cidade, Telefone, E-mail e LinkedIn (com hiperlinks).
+                3. OBJETIVO: Coloque o cargo ou área pretendida (máximo 3 opções)[cite: 4].
+                4. PERFIL PROFISSIONAL (Escrito estritamente em 3ª pessoa)[cite: 5]:
+                   - 1º Parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando competências comportamentais importantes[cite: 5].
+                   - 2º Parágrafo: Expertises detalhadas com base nas atividades-chave e palavras-chave que mais se repetem na descrição da vaga[cite: 5].
+                   - 3º Parágrafo: Conhecimentos em sistemas e ferramentas teóricas relevantes[cite: 5].
+                5. FORMAÇÃO ACADÊMICA: Ordem de importância/cronológica (Pós-doutorado, Doutorado, Mestrado, Pós-graduação, Graduação, Técnico). Não incluir ensino médio se houver nível superior/técnico[cite: 4]. Formato: Nome do curso | Instituição de ensino - Ano de conclusão[cite: 4].
+                6. CURSOS E CERTIFICAÇÕES: Ordem alfabética ou cronológica[cite: 4]. Formato: Nome do curso | Instituição de ensino | Ano de conclusão (com validade se for certificação)[cite: 4].
+                7. EXPERIÊNCIAS PROFISSIONAIS: Ordem cronológica da mais recente para a mais antiga[cite: 4]. Descrições escritas em tópicos, neutras e profissionais baseadas nas exigências da vaga[cite: 4, 5].
                 
                 Currículo Antigo:
                 {curriculo_antigo}
@@ -111,7 +112,7 @@ if gerar_btn:
                 Descrição da Vaga / Requisitos:
                 {descricao_vaga}
                 
-                Retorne o conteúdo limpo, organizado por seções claras para que possa ser convertido em documento Word/PDF.
+                Retorne o conteúdo limpo, organizado por seções claras para que possa ser convertido em documento Word.
                 """
                 
                 resultado_ia = chamar_gemini_com_retry(client, prompt_sistema)
@@ -119,7 +120,6 @@ if gerar_btn:
                 st.session_state["curriculo_gerado"] = resultado_ia
                 st.success("✨ Currículo otimizado com sucesso!")
                 
-            exc = Exception
             except Exception as e:
                 st.error(f"Ocorreu um erro durante o processamento: {e}")
 
@@ -129,11 +129,10 @@ if "curriculo_gerado" in st.session_state:
     st.subheader("📄 Resultado Gerado")
     st.text_area("Texto Otimizado:", st.session_state["curriculo_gerado"], height=300)
     
-    st.info(f"Modo selecionado: **{modelo_escolhido}**. O documento gerado respeita as margens e diretrizes de uma única página/layout limpo.")
+    st.info(f"Modo selecionado: **{modelo_escolhido}**. O documento gerado respeita as margens e diretrizes do padrão da consultoria.")
     
     # Geração de Documento Word (.docx)
     doc = docx.Document()
-    # Ajuste de margens corporativas
     for section in doc.sections:
         section.top_margin = Inches(0.8)
         section.bottom_margin = Inches(0.8)
