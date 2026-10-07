@@ -89,16 +89,17 @@ with col2:
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
+    # Modelos atualizados e estáveis para a API do Gemini
     modelos_para_tentar = [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'gemini-1.5-flash'
+        'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash'
     ]
     
     erros_acumulados = []
     
     for modelo in modelos_para_tentar:
-        for tentativa in range(3):
+        for tentativa in range(2):
             try:
                 response = client.models.generate_content(
                     model=modelo,
@@ -109,15 +110,10 @@ def chamar_gemini_com_retry(client, prompt_texto):
             except Exception as e:
                 erro_str = str(e)
                 erros_acumulados.append(f"[{modelo}] {erro_str}")
-                
-                if "503" in erro_str or "429" in erro_str or "RESOURCE_EXHAUSTED" in erro_str:
-                    time.sleep(2)
-                    continue
-                
                 time.sleep(1)
                 break
                 
-    raise Exception(f"Servidor temporariamente congestionado. Por favor, clica novamente em 'Otimizar' em instantes. Detalhe: {erros_acumulados[-1]}")
+    raise Exception(f"Erro ao comunicar com a API. Verifique sua chave ou tente novamente em instantes. Detalhe: {erros_acumulados[-1]}")
 
 if gerar_btn:
     if not ativa_api_key:
@@ -125,7 +121,7 @@ if gerar_btn:
     elif not curriculo_antigo or not descricao_vaga:
         st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
-        with st.spinner("A processar e reestruturando o currículo com os modelos atuais..."):
+        with st.spinner("A processar e reestruturando o currículo..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
