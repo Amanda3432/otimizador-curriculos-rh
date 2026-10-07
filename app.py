@@ -89,9 +89,10 @@ with col2:
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
-    # Lista limpa e atualizada com os modelos ativos e recomendados
     modelos_para_tentar = [
         'gemini-3.8-flash',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash',
         'gemini-3.5-flash'
     ]
     
@@ -108,15 +109,10 @@ def chamar_gemini_com_retry(client, prompt_texto):
         except Exception as e:
             erro_str = str(e)
             erros_acumulados.append(f"[{modelo}] {erro_str}")
-            
-            # Se falhar por 503 (alta procura), aguarda um pouco mais antes de tentar o próximo
-            if "503" in erro_str or "UNAVAILABLE" in erro_str:
-                time.sleep(3)
-            else:
-                time.sleep(1)
+            time.sleep(2)
             continue
                 
-    raise Exception(f"Todos os modelos testados falharam devido a alta procura ou limites. Detalhes: {erros_acumulados}")
+    raise Exception(f"Todos os modelos testados falharam devido a alta procura ou limites de cota. Detalhes: {erros_acumulados}")
 
 if gerar_btn:
     if not ativa_api_key:
@@ -210,21 +206,22 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (FONTES AMPLIADAS) ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=13, leading=15, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=9, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    # Aumento dos tamanhos de fonte para excelente legibilidade
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=11, textColor=cor_total, spaceBefore=8, spaceAfter=3, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=13, textColor=cor_total, spaceBefore=9, spaceAfter=4, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=3, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
     story = []
 
@@ -278,7 +275,7 @@ if "curriculo_gerado" in st.session_state:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=48, height=48)
+        img = RLImage(temp_foto_path, width=52, height=52)
         
         infos_com_foto = [
             Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
@@ -287,7 +284,7 @@ if "curriculo_gerado" in st.session_state:
         
         tabela_esquerda_foto = Table([
             [img, infos_com_foto]
-        ], colWidths=[54, 291])
+        ], colWidths=[60, 285])
         tabela_esquerda_foto.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (0,0), (0,0), 'LEFT'),
@@ -308,7 +305,7 @@ if "curriculo_gerado" in st.session_state:
         [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
         [Paragraph(email, estilo_contato_dir), criar_icone_email()],
         [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[160, 35])
+    ], colWidths=[175, 30])
     
     tabela_contatos_direita.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -316,11 +313,11 @@ if "curriculo_gerado" in st.session_state:
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
         ('TOPPADDING', (0,0), (-1,-1), 1),
         ('BOTTOMPADDING', (0,0), (-1,-1), 1),
-        ('LEFTPADDING', (1,0), (1,-1), 8),
-        ('RIGHTPADDING', (0,0), (0,-1), 4),
+        ('LEFTPADDING', (1,0), (1,-1), 4),
+        ('RIGHTPADDING', (0,0), (0,-1), 2),
     ]))
 
-    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[345, 195])
+    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[335, 205])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
@@ -329,8 +326,8 @@ if "curriculo_gerado" in st.session_state:
     ]))
     
     story.append(t_header)
-    story.append(Spacer(1, 2))
-    story.append(HRFlowable(width="100%", thickness=0.6, color=cor_total, spaceAfter=4, spaceBefore=0))
+    story.append(Spacer(1, 3))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=5, spaceBefore=0))
 
     def adicionar_secao(titulo, conteudo_html):
         if conteudo_html:
