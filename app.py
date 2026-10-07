@@ -91,11 +91,9 @@ with col2:
 def chamar_gemini_com_retry(client, prompt_texto):
     # Nova lista com 5 níveis de rotação solicitados
     modelos_para_tentar = [
-        'gemini-3.8-flash',
         'gemini-3.7-flash',
         'gemini-3.6-flash',
         'gemini-3.5-flash',
-        'gemini-3.1-pro'
     ]
     
     erros_acumulados = []
