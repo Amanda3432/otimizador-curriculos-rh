@@ -57,7 +57,7 @@ if modelo_escolhido == "Modelo Com Foto":
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📘 Documentação")
 
-pdf_manual_path = "Manual_Otimizador_de_Curriculos.pdf"
+pdf_manual_path = "Manual_Otimizador_de_Curriculos_2.pdf"
 if os.path.exists(pdf_manual_path):
     with open(pdf_manual_path, "rb") as f:
         manual_bytes = f.read()
@@ -65,12 +65,12 @@ if os.path.exists(pdf_manual_path):
     st.sidebar.download_button(
         label="📥 Baixar Manual do Colaborador (PDF)",
         data=manual_bytes,
-        file_name="Manual_Otimizador_de_Curriculos.pdf",
+        file_name="Manual_Otimizador_de_Curriculos_2.pdf",
         mime="application/pdf",
         use_container_width=True
     )
 else:
-    st.sidebar.warning("⚠️ Arquivo 'Manual_Otimizador_de_Curriculos.pdf' não encontrado na pasta do projeto.")
+    st.sidebar.warning("⚠️ Arquivo 'Manual_Otimizador_de_Curriculos_2.pdf' não encontrado na pasta do projeto.")
 
 ativa_api_key = st.session_state.get("api_key", "")
 
@@ -84,16 +84,15 @@ with col1:
 
 with col2:
     st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas e ícones padronizados integrados automaticamente.")
+    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas e ícones integrados automaticamente.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
-    # Modelos atualizados e estáveis para a API do Gemini
     modelos_para_tentar = [
-        'gemini-3.7-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash'
+        'gemini-3.5-flash',
+        'gemini-3.6-flsh',
+        'gemini-3.7-flash'
     ]
     
     erros_acumulados = []
@@ -130,8 +129,8 @@ if gerar_btn:
                 RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte apenas a linguagem para ficar profissional e alinhada à vaga.
                 
                 IMPORTANTE SOBRE O PERFIL PROFISSIONAL: 
-                - Escreva em 3ª pessoa, dividido em exatamente 3 parágrafos curtos, escritos em sequência direta e fluida, UM LOGO ABAIXO DO OUTRO.
-                - NUNCA utilize palavras rotuladas ou termos mecânicos como "Expertises em:", "Conhecimentos em:" ou similar. O texto deve fluir de forma totalmente natural e narrativa, conectando as competências, vivências e ferramentas da área diretamente no texto corrido.
+                - Escreva em 3ª pessoa, unindo todas as ideias num único parágrafo contínuo, fluido e natural, sem quebras de linha ou parágrafos separados.
+                - NUNCA utilize palavras rotuladas ou termos mecânicos como "Expertises em:", "Conhecimentos em:" ou similar.
                 
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
@@ -145,9 +144,7 @@ if gerar_btn:
                 [Bairro, Cidade | Telefone | E-mail | LinkedIn reais extraídos do currículo]
                 
                 [PERFIL PROFISSIONAL]
-                [1º Parágrafo fluido e natural apresentando o profissional e sua atuação principal]
-                [2º Parágrafo fluido detalhando as práticas, procedimentos e entregas alinhadas aos requisitos da vaga]
-                [3º Parágrafo fluido mencionando os sistemas, ferramentas e qualificações gerais]
+                [Texto único corrido integrando a apresentação, vivências práticas e ferramentas da área num só parágrafo fluido]
                 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano real]
@@ -220,7 +217,8 @@ if "curriculo_gerado" in st.session_state:
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
     estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=9, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=11, textColor=cor_total, spaceBefore=5, spaceAfter=2, fontName="Times-Bold")
+    # Espaçamento limpo entre títulos sem linhas pretas
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=11, textColor=cor_total, spaceBefore=8, spaceAfter=3, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
     estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
     estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
@@ -334,13 +332,12 @@ if "curriculo_gerado" in st.session_state:
     def adicionar_secao(titulo, conteudo_html):
         if conteudo_html:
             story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
-            story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=2, spaceBefore=1))
             story.append(Paragraph(conteudo_html, estilo_texto))
 
     if perfil_txt:
-        paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n\n') if p.strip()]
-        perfil_formatado = "<br/><br/>".join(paragrafos_perfil)
-        adicionar_secao("Perfil Profissional", perfil_formatado)
+        # Junta tudo num parágrafo único removendo quebras extras
+        perfil_unico = " ".join([p.strip() for p in perfil_txt.split('\n') if p.strip()])
+        adicionar_secao("Perfil Profissional", perfil_unico)
 
     if formacao_txt:
         adicionar_secao("Formação Acadêmica", formacao_txt.replace('\n', '<br/>'))
@@ -354,7 +351,6 @@ if "curriculo_gerado" in st.session_state:
 
     if experiencia_txt:
         story.append(Paragraph("<b>Experiência Profissional</b>", estilo_titulo_secao))
-        story.append(HRFlowable(width="100%", thickness=0.3, color=cor_total, spaceAfter=2, spaceBefore=1))
         
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
