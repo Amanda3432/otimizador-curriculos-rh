@@ -92,10 +92,9 @@ def chamar_gemini_com_retry(client, prompt_texto):
     # Lista atualizada com os identificadores oficiais e estáveis da API do Google
     modelos_para_tentar = [
         'gemini-3.8-flash',
-        'gemini-3.5-flash',
         'gemini-2.5-flash',
         'gemini-1.5-flash',
-        'gemini-2.5-pro'
+        'gemini-3.1-pro-preview'
     ]
     
     erros_acumulados = []
