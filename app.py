@@ -89,12 +89,10 @@ with col2:
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
-    # Lista atualizada com os identificadores oficiais e estáveis da API do Google
+    # Lista limpa e atualizada com os modelos ativos e recomendados
     modelos_para_tentar = [
         'gemini-3.8-flash',
-        'gemini-2.5-flash',
-        'gemini-1.5-flash',
-        'gemini-3.1-pro-preview'
+        'gemini-3.5-flash'
     ]
     
     erros_acumulados = []
@@ -110,7 +108,12 @@ def chamar_gemini_com_retry(client, prompt_texto):
         except Exception as e:
             erro_str = str(e)
             erros_acumulados.append(f"[{modelo}] {erro_str}")
-            time.sleep(1)
+            
+            # Se falhar por 503 (alta procura), aguarda um pouco mais antes de tentar o próximo
+            if "503" in erro_str or "UNAVAILABLE" in erro_str:
+                time.sleep(3)
+            else:
+                time.sleep(1)
             continue
                 
     raise Exception(f"Todos os modelos testados falharam devido a alta procura ou limites. Detalhes: {erros_acumulados}")
