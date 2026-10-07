@@ -89,29 +89,32 @@ with col2:
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 def chamar_gemini_com_retry(client, prompt_texto):
+    # Nova lista com 5 níveis de rotação solicitados
     modelos_para_tentar = [
-        'gemini-3.5-flash',
+        'gemini-3.8-flash',
+        'gemini-3.7-flash',
         'gemini-3.6-flash',
+        'gemini-3.5-flash',
+        'gemini-3.1-pro'
     ]
     
     erros_acumulados = []
     
     for modelo in modelos_para_tentar:
-        for tentativa in range(2):
-            try:
-                response = client.models.generate_content(
-                    model=modelo,
-                    contents=prompt_texto,
-                )
-                if response and response.text:
-                    return response.text
-            except Exception as e:
-                erro_str = str(e)
-                erros_acumulados.append(f"[{modelo}] {erro_str}")
-                time.sleep(1)
-                break
+        try:
+            response = client.models.generate_content(
+                model=modelo,
+                contents=prompt_texto,
+            )
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            erro_str = str(e)
+            erros_acumulados.append(f"[{modelo}] {erro_str}")
+            time.sleep(1)
+            continue
                 
-    raise Exception(f"Erro ao comunicar com a API. Verifique sua chave ou tente novamente em instantes. Detalhe: {erros_acumulados[-1]}")
+    raise Exception(f"Todos os modelos testados falharam devido a alta procura ou limites. Detalhes: {erros_acumulados}")
 
 if gerar_btn:
     if not ativa_api_key:
@@ -216,7 +219,6 @@ if "curriculo_gerado" in st.session_state:
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
     estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=9, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    # Espaçamento limpo entre títulos sem linhas pretas
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=9.5, leading=11, textColor=cor_total, spaceBefore=8, spaceAfter=3, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
     estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
@@ -334,7 +336,6 @@ if "curriculo_gerado" in st.session_state:
             story.append(Paragraph(conteudo_html, estilo_texto))
 
     if perfil_txt:
-        # Junta tudo num parágrafo único removendo quebras extras
         perfil_unico = " ".join([p.strip() for p in perfil_txt.split('\n') if p.strip()])
         adicionar_secao("Perfil Profissional", perfil_unico)
 
