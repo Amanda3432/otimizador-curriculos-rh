@@ -92,7 +92,6 @@ def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
         'gemini-3.5-flash',
         'gemini-3.6-flsh',
-        'gemini-3.7-flash'
     ]
     
     erros_acumulados = []
