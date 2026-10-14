@@ -27,8 +27,8 @@ try:
 except Exception:
     pass
 
-if "api_key" in st.session_state and st.session_state["api_key"]:
-    default_api_key = st.session_state["api_key"]
+# Chave de API configurada de forma fixa e automática
+default_api_key = ""
 
 api_key_input = st.sidebar.text_input(
     "Insira sua Google Gemini API Key", 
