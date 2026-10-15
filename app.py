@@ -20,12 +20,7 @@ st.markdown("Ferramenta automatizada ajustada estritamente à fonte Times New Ro
 # --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
 st.sidebar.header("🔑 Configuração da API")
 
-default_api_key = ""
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        default_api_key = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    pass
+default_api_key = "AQ.Ab8RN6KxMS133aB5r8BVa0bNhaBp7N2oh6gXxoWljMfT3m1CfQ"
 
 # Chave de API configurada de forma fixa e automática
 default_api_key = ""
