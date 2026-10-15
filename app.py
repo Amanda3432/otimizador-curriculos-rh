@@ -22,9 +22,9 @@ try:
     if "GEMINI_API_KEY" in st.secrets:
         ativa_api_key = st.secrets["GEMINI_API_KEY"]
     else:
-        ativa_api_key = "AQ.Ab8RN6KxMS133aB5r8BVa0bNhaBp7N2oh6gXxoWljMfT3m1CfQ"
+        ativa_api_key = ""
 except Exception:
-    ativa_api_key = "AQ.Ab8RN6KxMS133aB5r8BVa0bNhaBp7N2oh6gXxoWljMfT3m1CfQ"
+    ativa_api_key = ""
 
 # --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO) ---
 st.sidebar.markdown("### 📋 Modelos Disponíveis")
