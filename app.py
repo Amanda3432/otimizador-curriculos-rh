@@ -17,25 +17,16 @@ st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Empre
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
 st.markdown("Ferramenta automatizada ajustada estritamente à fonte Times New Roman, cores pretas sólidas e ícones integrados automaticamente.")
 
-# --- BARRA LATERAL (CONFIGURAÇÕES E CHAVE API) ---
-st.sidebar.header("🔑 Configuração da API")
+# --- CONFIGURAÇÃO AUTOMÁTICA DA API (SEM EXIBIR CAMPO MANUAL) ---
+try:
+    if "GEMINI_API_KEY" in st.secrets:
+        ativa_api_key = st.secrets["GEMINI_API_KEY"]
+    else:
+        ativa_api_key = "AQ.Ab8RN6KxMS133aB5r8BVa0bNhaBp7N2oh6gXxoWljMfT3m1CfQ"
+except Exception:
+    ativa_api_key = "AQ.Ab8RN6KxMS133aB5r8BVa0bNhaBp7N2oh6gXxoWljMfT3m1CfQ"
 
-default_api_key = "AQ.Ab8RN6KxMS133aB5r8BVa0bNhaBp7N2oh6gXxoWljMfT3m1CfQ"
-
-# Chave de API configurada de forma fixa e automática
-default_api_key = ""
-
-api_key_input = st.sidebar.text_input(
-    "Insira sua Google Gemini API Key", 
-    value=default_api_key, 
-    type="password",
-    help="Cole aqui a sua chave do Google AI Studio"
-)
-
-if api_key_input:
-    st.session_state["api_key"] = api_key_input
-
-st.sidebar.markdown("---")
+# --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO) ---
 st.sidebar.markdown("### 📋 Modelos Disponíveis")
 modelo_escolhido = st.sidebar.radio(
     "Escolha o formato de saída:",
@@ -67,8 +58,6 @@ if os.path.exists(pdf_manual_path):
 else:
     st.sidebar.warning("⚠️ Arquivo 'Manual_Otimizador_de_Curriculos_2.pdf' não encontrado na pasta do projeto.")
 
-ativa_api_key = st.session_state.get("api_key", "")
-
 # --- ÁREA PRINCIPAL ---
 col1, col2 = st.columns(2)
 
@@ -85,7 +74,6 @@ with col2:
 
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
-        'gemini-3.8-flash',
         'gemini-2.5-flash',
         'gemini-1.5-flash',
         'gemini-3.5-flash'
@@ -110,9 +98,7 @@ def chamar_gemini_com_retry(client, prompt_texto):
     raise Exception(f"Todos os modelos testados falharam devido a alta procura ou limites de cota. Detalhes: {erros_acumulados}")
 
 if gerar_btn:
-    if not ativa_api_key:
-        st.error("⚠️ Por favor, insira a sua Chave de API na barra lateral para continuar.")
-    elif not curriculo_antigo or not descricao_vaga:
+    if not curriculo_antigo or not descricao_vaga:
         st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
     else:
         with st.spinner("A processar e reestruturando o currículo..."):
@@ -201,14 +187,13 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (FONTES AMPLIADAS) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
 
-    # Aumento dos tamanhos de fonte para excelente legibilidade
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
     estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", alignment=2) 
