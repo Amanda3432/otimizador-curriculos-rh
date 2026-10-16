@@ -16,7 +16,7 @@ import pypdf
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload de arquivos (PDF/Word), leitura de links de vagas, limite de 2 páginas e ícones alinhados.")
+st.markdown("Ferramenta automatizada com suporte a upload de arquivos (PDF/Word), leitura de links de vagas, limite de 2 páginas e ícones perfeitamente sincronizados.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -106,7 +106,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas, ícones alinhados e máximo de 2 páginas.")
+    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas, ícones rigorosamente alinhados e máximo de 2 páginas.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -225,21 +225,21 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (MÁXIMO 2 PÁGINAS E ÍCONES CORRIGIDOS) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (BLINDAGEM COMPLETA DOS ÍCONES) ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=14, leading=16, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=13.5, leading=15.5, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=10.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10, leading=12, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9.5, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9.5, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=9.5, leading=12, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10, leading=12, textColor=cor_total, spaceBefore=5, spaceAfter=2.5, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
     story = []
 
@@ -256,11 +256,26 @@ if "curriculo_gerado" in st.session_state:
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
 
-    partes_contato = [p.strip() for p in contato_txt.replace('|', ',').split(',') if p.strip()]
-    cidade_bairro = partes_contato[0] if len(partes_contato) > 0 else "Bairro, Cidade"
-    telefone = partes_contato[1] if len(partes_contato) > 1 else "Telefone"
-    email = partes_contato[2] if len(partes_contato) > 2 else "E-mail"
-    linkedin = partes_contato[3] if len(partes_contato) > 3 else "https://www.linkedin.com/in/"
+    # --- IDENTIFICAÇÃO INTELIGENTE E RIGOROSA DOS CONTATOS VIA REGEX ---
+    partes_contato = [p.strip() for p in contato_txt.replace('|', '\n').split('\n') if p.strip()]
+    
+    email_val = "E-mail"
+    telefone_val = "Telefone"
+    linkedin_val = "https://www.linkedin.com/in/"
+    endereco_val = "Bairro, Cidade"
+
+    for p in partes_contato:
+        if "@" in p:
+            email_val = p
+        elif "linkedin" in p.lower() or "in/" in p.lower():
+            linkedin_val = p
+        elif re.search(r'\d{8,}', re.sub(r'\D', '', p)):
+            telefone_val = p
+        else:
+            endereco_val = p
+
+    # Formata o endereço em linha única limpa para evitar quebra de linha
+    endereco_val_limpo = endereco_val.replace('\n', ' • ')
 
     # Funções de Ícones
     def criar_icone_casa():
@@ -294,7 +309,7 @@ if "curriculo_gerado" in st.session_state:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=48, height=48)
+        img = RLImage(temp_foto_path, width=46, height=46)
         
         infos_com_foto = [
             Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
@@ -303,12 +318,12 @@ if "curriculo_gerado" in st.session_state:
         
         tabela_esquerda_foto = Table([
             [img, infos_com_foto]
-        ], colWidths=[55, 290])
+        ], colWidths=[52, 268])
         tabela_esquerda_foto.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (0,0), (0,0), 'LEFT'),
             ('ALIGN', (1,0), (1,0), 'LEFT'),
-            ('LEFTPADDING', (1,0), (1,0), 5),
+            ('LEFTPADDING', (1,0), (1,0), 4),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ]))
@@ -319,25 +334,25 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(cargo_txt, estilo_cargo)
         ]
 
-    # TABELA DE CONTATOS COM ORDEM RIGOROSA DOS ÍCONES
+    # --- TABELA DE CONTATOS 100% BLINDADA (TEXTO E ÍCONE CASADOS EM CADA LINHA) ---
     tabela_contatos_direita = Table([
-        [Paragraph(cidade_bairro, estilo_contato_dir), criar_icone_casa()],
-        [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
-        [Paragraph(email, estilo_contato_dir), criar_icone_email()],
-        [Paragraph(linkedin, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[185, 20])
+        [Paragraph(endereco_val_limpo, estilo_contato_dir), criar_icone_casa()],
+        [Paragraph(telefone_val, estilo_contato_dir), criar_icone_telefone()],
+        [Paragraph(email_val, estilo_contato_dir), criar_icone_email()],
+        [Paragraph(linkedin_val, estilo_contato_dir), criar_icone_linkedin()]
+    ], colWidths=[205, 18])
     
     tabela_contatos_direita.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('ALIGN', (0,0), (0,-1), 'RIGHT'),
         ('ALIGN', (1,0), (1,-1), 'CENTER'),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0.5),
         ('LEFTPADDING', (1,0), (1,-1), 2),
-        ('RIGHTPADDING', (0,0), (0,-1), 2),
+        ('RIGHTPADDING', (0,0), (0,-1), 0),
     ]))
 
-    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[345, 195])
+    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[317, 223])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
