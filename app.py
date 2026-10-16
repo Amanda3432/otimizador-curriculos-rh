@@ -11,13 +11,14 @@ import time
 import io
 import os
 import re
+import pypdf
 
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada ajustada estritamente à fonte Times New Roman, cores pretas sólidas, ícones alinhados e limite máximo de 2 páginas.")
+st.markdown("Ferramenta automatizada com suporte a upload de arquivos (PDF/Word), leitura de links de vagas, limite de 2 páginas e ícones alinhados.")
 
-# --- CONFIGURAÇÃO AUTOMÁTICA DA API (SEM EXIBIR CAMPO MANUAL) ---
+# --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
     if "GEMINI_API_KEY" in st.secrets:
         ativa_api_key = st.secrets["GEMINI_API_KEY"]
@@ -62,13 +63,50 @@ else:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("1️⃣ Dados do Candidato e Vaga")
-    curriculo_antigo = st.text_area("Cole o Currículo Atual do Cliente:", height=200, placeholder="Cole aqui o texto do currículo antigo...")
-    descricao_vaga = st.text_area("Cole a Descrição da Vaga ou Palavras-Chave:", height=150, placeholder="Cole a descrição da vaga...")
+    st.subheader("1️⃣ Currículo do Cliente")
+    tipo_entrada_cv = st.radio("Como deseja inserir o currículo?", ("Digitar / Colar Texto", "Carregar Arquivo (PDF ou Word)"), horizontal=True)
+    
+    curriculo_antigo = ""
+    if tipo_entrada_cv == "Digitar / Colar Texto":
+        curriculo_antigo = st.text_area("Cole o texto do currículo antigo:", height=180, placeholder="Cole aqui...")
+    else:
+        arquivo_cv = st.file_uploader("Carregar Currículo (PDF ou DOCX)", type=["pdf", "docx"])
+        if arquivo_cv is not None:
+            if arquivo_cv.name.endswith(".pdf"):
+                try:
+                    leitor_pdf = pypdf.PdfReader(arquivo_cv)
+                    for pagina in leitor_pdf.pages:
+                        texto_extraido = pagina.extract_text()
+                        if texto_extraido:
+                            curriculo_antigo += texto_extraido + "\n"
+                    st.success("✅ PDF do currículo carregado com sucesso!")
+                except Exception as e:
+                    st.error(f"Erro ao ler PDF: {e}")
+            elif arquivo_cv.name.endswith(".docx"):
+                try:
+                    doc_leitor = docx.Document(arquivo_cv)
+                    for para in doc_leitor.paragraphs:
+                        curriculo_antigo += para.text + "\n"
+                    st.success("✅ Word do currículo carregado com sucesso!")
+                except Exception as e:
+                    st.error(f"Erro ao ler DOCX: {e}")
+
+    st.markdown("---")
+    st.subheader("2️⃣ Descrição da Vaga")
+    tipo_entrada_vaga = st.radio("Como deseja inserir a vaga?", ("Digitar / Colar Descrição", "Inserir Link da Vaga (Gupy, LinkedIn, etc.)"), horizontal=True)
+    
+    descricao_vaga = ""
+    if tipo_entrada_vaga == "Digitar / Colar Descrição":
+        descricao_vaga = st.text_area("Cole os requisitos da vaga:", height=150, placeholder="Cole a descrição da vaga aqui...")
+    else:
+        link_vaga = st.text_input("Cole o link da vaga (ex: Gupy, LinkedIn):", placeholder="https://www.linkedin.com/jobs/... ou https://empresa.gupy.io/...")
+        info_adicional_vaga = st.text_area("Resumo ou Requisitos principais da vaga (opcional para auxiliar a IA):", height=80, placeholder="Ex: Vaga de Assistente de DP, exige Excel avançado...")
+        if link_vaga:
+            descricao_vaga = f"Link da Vaga: {link_vaga}\nInformações Complementares: {info_adicional_vaga}"
 
 with col2:
-    st.subheader("2️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas, ícones perfeitamente alinhados e máximo de 2 páginas.")
+    st.subheader("3️⃣ Instruções e Execução")
+    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas, ícones alinhados e máximo de 2 páginas.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -98,8 +136,8 @@ def chamar_gemini_com_retry(client, prompt_texto):
     raise Exception(f"Todos os modelos testados falharam devido a alta procura ou limites de cota. Detalhes: {erros_acumulados}")
 
 if gerar_btn:
-    if not curriculo_antigo or not descricao_vaga:
-        st.warning("⚠️ Preencha tanto o currículo antigo quanto a descrição da vaga.")
+    if not curriculo_antigo.strip() or not descricao_vaga.strip():
+        st.warning("⚠️ Por favor, forneça o currículo do cliente e os dados/link da vaga.")
     else:
         with st.spinner("A processar e reestruturando o currículo..."):
             try:
@@ -281,7 +319,7 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(cargo_txt, estilo_cargo)
         ]
 
-    # TABELA DE CONTATOS COM ORDEM RIGOROSA E CORRETA DOS ÍCONES
+    # TABELA DE CONTATOS COM ORDEM RIGOROSA DOS ÍCONES
     tabela_contatos_direita = Table([
         [Paragraph(cidade_bairro, estilo_contato_dir), criar_icone_casa()],
         [Paragraph(telefone, estilo_contato_dir), criar_icone_telefone()],
