@@ -16,7 +16,7 @@ import pypdf
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, fontes maiores e seções de Idiomas e Projetos.")
+st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, fontes otimizadas e seções de Idiomas, Projetos e Voluntariado.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -106,7 +106,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, ícones sincronizados e máximo de 2 páginas.")
+    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, ícones perfeitamente sincronizados e máximo de 2 páginas.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -147,7 +147,7 @@ if gerar_btn:
                 Você é um consultor especialista em RH. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga desejada.
                 RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte apenas a linguagem para ficar profissional e alinhada à vaga.
                 
-                FORMATO EXIGIDO PARA O PERFIL PROFISSIONAL (Dividido em parágrafos fluidos):
+                FORMATO EXIGIDO PARA O PERFIL PROFISSIONAL (Dividido em 3 parágrafos fluidos):
                 - Parágrafo 1: Apresentação profissional (Ex: Profissional graduado/cursando em... com sólida trajetória em...) destacando a experiência geral.
                 - Parágrafo 2: Destaques de atuação, hard skills e competências técnicas alinhadas à vaga.
                 - Parágrafo 3: Conhecimentos em sistemas, ferramentas e termos/palavras-chave relevantes.
@@ -165,7 +165,9 @@ if gerar_btn:
                 
                 [PERFIL PROFISSIONAL]
                 [Parágrafo 1 de introdução e trajetória]
+                
                 [Parágrafo 2 de competências e destaques]
+                
                 [Parágrafo 3 de sistemas, ferramentas e palavras-chave]
                 
                 [FORMAÇÃO ACADÊMICA]
@@ -179,6 +181,9 @@ if gerar_btn:
                 
                 [PROJETOS E RESULTADOS]
                 [Nome/Descrição de projeto ou resultado real] (Apenas se houver no original)
+                
+                [TRABALHO VOLUNTÁRIO]
+                [Atividade ou projeto voluntário real] (Apenas se houver no original)
                 
                 [HABILIDADES E COMPETÊNCIAS]
                 - [Competência real 1]
@@ -234,20 +239,20 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (FONTES MAIORES E ÍCONES BLINDADOS) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
 
-    # Ajuste de tamanhos e leading solicitados pela supervisora (Times maior e legível)
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=10.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12.5, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=4, alignment=4)
     estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
     estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
@@ -265,10 +270,11 @@ if "curriculo_gerado" in st.session_state:
     cursos_txt = extrair_tag("CURSOS E CERTIFICAÇÕES", texto_gerado)
     idiomas_txt = extrair_tag("IDIOMAS", texto_gerado)
     projetos_txt = extrair_tag("PROJETOS E RESULTADOS", texto_gerado)
+    voluntariado_txt = extrair_tag("TRABALHO VOLUNTÁRIO", texto_gerado)
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
 
-    # --- IDENTIFICAÇÃO INTELIGENTE E RIGOROSA DOS CONTATOS VIA REGEX ---
+    # --- IDENTIFICAÇÃO RIGOROSA DOS CONTATOS VIA REGEX ---
     partes_contato = [p.strip() for p in contato_txt.replace('|', '\n').split('\n') if p.strip()]
     
     email_val = "E-mail"
@@ -287,6 +293,13 @@ if "curriculo_gerado" in st.session_state:
             endereco_val = p
 
     endereco_val_limpo = endereco_val.replace('\n', ' • ')
+    
+    # Encurta a exibição visual do link do LinkedIn para evitar quebras longas na tabela
+    linkedin_exibicao = linkedin_val
+    if "linkedin.com/in/" in linkedin_val:
+        linkedin_exibicao = linkedin_val.replace("https://", "").replace("www.", "")
+        if len(linkedin_exibicao) > 32:
+            linkedin_exibicao = linkedin_exibicao[:30] + "..."
 
     # Funções de Ícones
     def criar_icone_casa():
@@ -345,13 +358,13 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(cargo_txt, estilo_cargo)
         ]
 
-    # --- TABELA DE CONTATOS BLINDADA E SINCRONIZADA ---
+    # --- TABELA DE CONTATOS COM LARGURA ESTÁVEL PARA O LINKEDIN ---
     tabela_contatos_direita = Table([
         [Paragraph(endereco_val_limpo, estilo_contato_dir), criar_icone_casa()],
         [Paragraph(telefone_val, estilo_contato_dir), criar_icone_telefone()],
         [Paragraph(email_val, estilo_contato_dir), criar_icone_email()],
-        [Paragraph(linkedin_val, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[190, 20])
+        [Paragraph(linkedin_exibicao, estilo_contato_dir), criar_icone_linkedin()]
+    ], colWidths=[205, 18])
     
     tabela_contatos_direita.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -363,7 +376,7 @@ if "curriculo_gerado" in st.session_state:
         ('RIGHTPADDING', (0,0), (0,-1), 0),
     ]))
 
-    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[330, 210])
+    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[317, 223])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
@@ -375,32 +388,36 @@ if "curriculo_gerado" in st.session_state:
     story.append(Spacer(1, 2))
     story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=4, spaceBefore=0))
 
-    def adicionar_secao(titulo, conteudo_html):
-        if conteudo_html:
-            story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
-            story.append(Paragraph(conteudo_html, estilo_texto))
-
     if perfil_txt:
-        # Divide os parágrafos do perfil para manter a estrutura fluida solicitada
+        story.append(Paragraph("<b>Perfil Profissional</b>", estilo_titulo_secao))
         paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n') if p.strip()]
-        perfil_formatado = "<br/><br/>".join(paragrafos_perfil)
-        adicionar_secao("Perfil Profissional", perfil_formatado)
+        for p_paragrafo in paragrafos_perfil:
+            story.append(Paragraph(p_paragrafo, estilo_perfil_texto))
 
     if formacao_txt:
-        adicionar_secao("Formação Acadêmica", formacao_txt.replace('\n', '<br/>'))
+        story.append(Paragraph("<b>Formação Acadêmica</b>", estilo_titulo_secao))
+        story.append(Paragraph(formacao_txt.replace('\n', '<br/>'), estilo_texto))
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
-        adicionar_secao("Cursos e Certificações", cursos_txt.replace('\n', '<br/>'))
+        story.append(Paragraph("<b>Cursos e Certificações</b>", estilo_titulo_secao))
+        story.append(Paragraph(cursos_txt.replace('\n', '<br/>'), estilo_texto))
 
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
-        adicionar_secao("Idiomas", idiomas_txt.replace('\n', '<br/>'))
+        story.append(Paragraph("<b>Idiomas</b>", estilo_titulo_secao))
+        story.append(Paragraph(idiomas_txt.replace('\n', '<br/>'), estilo_texto))
 
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
-        adicionar_secao("Projetos e Resultados", projetos_txt.replace('\n', '<br/>'))
+        story.append(Paragraph("<b>Projetos e Resultados</b>", estilo_titulo_secao))
+        story.append(Paragraph(projetos_txt.replace('\n', '<br/>'), estilo_texto))
+
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+        story.append(Paragraph("<b>Trabalho Voluntário</b>", estilo_titulo_secao))
+        story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
 
     if habilidades_txt:
         hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
-        adicionar_secao("Habilidades e Competências", hab_formatadas)
+        story.append(Paragraph("<b>Habilidades e Competências</b>", estilo_titulo_secao))
+        story.append(Paragraph(hab_formatadas, estilo_texto))
 
     if experiencia_txt:
         story.append(Paragraph("<b>Experiência Profissional</b>", estilo_titulo_secao))
