@@ -16,7 +16,7 @@ import pypdf
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, fontes otimizadas e seções de Idiomas, Projetos e Voluntariado.")
+st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, fontes otimizadas e alinhamento de contatos blindado.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -294,12 +294,9 @@ if "curriculo_gerado" in st.session_state:
 
     endereco_val_limpo = endereco_val.replace('\n', ' • ')
     
-    # Encurta a exibição visual do link do LinkedIn para evitar quebras longas na tabela
-    linkedin_exibicao = linkedin_val
-    if "linkedin.com/in/" in linkedin_val:
-        linkedin_exibicao = linkedin_val.replace("https://", "").replace("www.", "")
-        if len(linkedin_exibicao) > 32:
-            linkedin_exibicao = linkedin_exibicao[:30] + "..."
+    # Prepara o link com tag de hiperlink clicável do PDF sem truncar dados
+    url_linkedin = linkedin_val if linkedin_val.startswith("http") else f"https://{linkedin_val}"
+    linkedin_html = f'<a href="{url_linkedin}"><font color="#000000">{linkedin_val.replace("https://", "").replace("http://", "")}</font></a>'
 
     # Funções de Ícones
     def criar_icone_casa():
@@ -342,7 +339,7 @@ if "curriculo_gerado" in st.session_state:
         
         tabela_esquerda_foto = Table([
             [img, infos_com_foto]
-        ], colWidths=[55, 275])
+        ], colWidths=[55, 245])
         tabela_esquerda_foto.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (0,0), (0,0), 'LEFT'),
@@ -358,30 +355,35 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(cargo_txt, estilo_cargo)
         ]
 
-    # --- TABELA DE CONTATOS COM LARGURA ESTÁVEL PARA O LINKEDIN ---
-    tabela_contatos_direita = Table([
-        [Paragraph(endereco_val_limpo, estilo_contato_dir), criar_icone_casa()],
-        [Paragraph(telefone_val, estilo_contato_dir), criar_icone_telefone()],
-        [Paragraph(email_val, estilo_contato_dir), criar_icone_email()],
-        [Paragraph(linkedin_exibicao, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[205, 18])
-    
-    tabela_contatos_direita.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (0,0), (0,-1), 'RIGHT'),
-        ('ALIGN', (1,0), (1,-1), 'CENTER'),
-        ('TOPPADDING', (0,0), (-1,-1), 0.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0.5),
-        ('LEFTPADDING', (1,0), (1,-1), 2),
-        ('RIGHTPADDING', (0,0), (0,-1), 0),
-    ]))
+    # --- SUBTABELAS ATÔMICAS PARA CADA LINHA DE CONTATO (TEXTO + ÍCONE BLINDADOS) ---
+    def criar_linha_contato(texto_html, icone_func):
+        t = Table([[Paragraph(texto_html, estilo_contato_dir), icone_func()]], colWidths=[222, 18])
+        t.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (0,0), 'RIGHT'),
+            ('ALIGN', (1,0), (1,0), 'CENTER'),
+            ('TOPPADDING', (0,0), (-1,-1), 1),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ]))
+        return t
 
-    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[317, 223])
+    bloco_contatos_direita = [
+        criar_linha_contato(endereco_val_limpo, criar_icone_casa),
+        criar_linha_contato(telefone_val, criar_icone_telefone),
+        criar_linha_contato(email_val, criar_icone_email),
+        criar_linha_contato(linkedin_html, criar_icone_linkedin)
+    ]
+
+    t_header = Table([ [coluna_esquerda, bloco_contatos_direita] ], colWidths=[300, 240])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
     ]))
     
     story.append(t_header)
