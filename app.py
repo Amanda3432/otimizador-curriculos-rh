@@ -16,7 +16,7 @@ import pypdf
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload de arquivos (PDF/Word), leitura de links de vagas, limite de 2 páginas e ícones perfeitamente sincronizados.")
+st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, fontes maiores e seções de Idiomas e Projetos.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -106,7 +106,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times, cores 100% pretas, ícones rigorosamente alinhados e máximo de 2 páginas.")
+    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, ícones sincronizados e máximo de 2 páginas.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -147,9 +147,10 @@ if gerar_btn:
                 Você é um consultor especialista em RH. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga desejada.
                 RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte apenas a linguagem para ficar profissional e alinhada à vaga.
                 
-                IMPORTANTE SOBRE O PERFIL PROFISSIONAL: 
-                - Escreva em 3ª pessoa, unindo todas as ideias num único parágrafo contínuo, fluido e natural, sem quebras de linha ou parágrafos separados.
-                - NUNCA utilize palavras rotuladas ou termos mecânicos como "Expertises em:", "Conhecimentos em:" ou similar.
+                FORMATO EXIGIDO PARA O PERFIL PROFISSIONAL (Dividido em parágrafos fluidos):
+                - Parágrafo 1: Apresentação profissional (Ex: Profissional graduado/cursando em... com sólida trajetória em...) destacando a experiência geral.
+                - Parágrafo 2: Destaques de atuação, hard skills e competências técnicas alinhadas à vaga.
+                - Parágrafo 3: Conhecimentos em sistemas, ferramentas e termos/palavras-chave relevantes.
                 
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
@@ -163,13 +164,21 @@ if gerar_btn:
                 [Bairro, Cidade | Telefone | E-mail | LinkedIn reais extraídos do currículo]
                 
                 [PERFIL PROFISSIONAL]
-                [Texto único corrido integrando a apresentação, vivências práticas e ferramentas da área num só parágrafo fluido]
+                [Parágrafo 1 de introdução e trajetória]
+                [Parágrafo 2 de competências e destaques]
+                [Parágrafo 3 de sistemas, ferramentas e palavras-chave]
                 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano real]
                 
                 [CURSOS E CERTIFICAÇÕES]
                 [Curso real | Instituição real - Ano real] (Apenas se houver no original)
+                
+                [IDIOMAS]
+                [Idioma - Nível real] (Apenas se houver no original)
+                
+                [PROJETOS E RESULTADOS]
+                [Nome/Descrição de projeto ou resultado real] (Apenas se houver no original)
                 
                 [HABILIDADES E COMPETÊNCIAS]
                 - [Competência real 1]
@@ -225,21 +234,22 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (BLINDAGEM COMPLETA DOS ÍCONES) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (FONTES MAIORES E ÍCONES BLINDADOS) ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=13.5, leading=15.5, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=10.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    # Ajuste de tamanhos e leading solicitados pela supervisora (Times maior e legível)
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", alignment=2) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10, leading=12, textColor=cor_total, spaceBefore=5, spaceAfter=2.5, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=9, leading=11.5, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12.5, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
     story = []
 
@@ -253,6 +263,8 @@ if "curriculo_gerado" in st.session_state:
     perfil_txt = extrair_tag("PERFIL PROFISSIONAL", texto_gerado)
     formacao_txt = extrair_tag("FORMAÇÃO ACADÊMICA", texto_gerado)
     cursos_txt = extrair_tag("CURSOS E CERTIFICAÇÕES", texto_gerado)
+    idiomas_txt = extrair_tag("IDIOMAS", texto_gerado)
+    projetos_txt = extrair_tag("PROJETOS E RESULTADOS", texto_gerado)
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
 
@@ -274,7 +286,6 @@ if "curriculo_gerado" in st.session_state:
         else:
             endereco_val = p
 
-    # Formata o endereço em linha única limpa para evitar quebra de linha
     endereco_val_limpo = endereco_val.replace('\n', ' • ')
 
     # Funções de Ícones
@@ -309,7 +320,7 @@ if "curriculo_gerado" in st.session_state:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=46, height=46)
+        img = RLImage(temp_foto_path, width=48, height=48)
         
         infos_com_foto = [
             Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
@@ -318,12 +329,12 @@ if "curriculo_gerado" in st.session_state:
         
         tabela_esquerda_foto = Table([
             [img, infos_com_foto]
-        ], colWidths=[52, 268])
+        ], colWidths=[55, 275])
         tabela_esquerda_foto.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (0,0), (0,0), 'LEFT'),
             ('ALIGN', (1,0), (1,0), 'LEFT'),
-            ('LEFTPADDING', (1,0), (1,0), 4),
+            ('LEFTPADDING', (1,0), (1,0), 5),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ]))
@@ -334,13 +345,13 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(cargo_txt, estilo_cargo)
         ]
 
-    # --- TABELA DE CONTATOS 100% BLINDADA (TEXTO E ÍCONE CASADOS EM CADA LINHA) ---
+    # --- TABELA DE CONTATOS BLINDADA E SINCRONIZADA ---
     tabela_contatos_direita = Table([
         [Paragraph(endereco_val_limpo, estilo_contato_dir), criar_icone_casa()],
         [Paragraph(telefone_val, estilo_contato_dir), criar_icone_telefone()],
         [Paragraph(email_val, estilo_contato_dir), criar_icone_email()],
         [Paragraph(linkedin_val, estilo_contato_dir), criar_icone_linkedin()]
-    ], colWidths=[205, 18])
+    ], colWidths=[190, 20])
     
     tabela_contatos_direita.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -352,7 +363,7 @@ if "curriculo_gerado" in st.session_state:
         ('RIGHTPADDING', (0,0), (0,-1), 0),
     ]))
 
-    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[317, 223])
+    t_header = Table([ [coluna_esquerda, tabela_contatos_direita] ], colWidths=[330, 210])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
@@ -370,14 +381,22 @@ if "curriculo_gerado" in st.session_state:
             story.append(Paragraph(conteudo_html, estilo_texto))
 
     if perfil_txt:
-        perfil_unico = " ".join([p.strip() for p in perfil_txt.split('\n') if p.strip()])
-        adicionar_secao("Perfil Profissional", perfil_unico)
+        # Divide os parágrafos do perfil para manter a estrutura fluida solicitada
+        paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n') if p.strip()]
+        perfil_formatado = "<br/><br/>".join(paragrafos_perfil)
+        adicionar_secao("Perfil Profissional", perfil_formatado)
 
     if formacao_txt:
         adicionar_secao("Formação Acadêmica", formacao_txt.replace('\n', '<br/>'))
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
         adicionar_secao("Cursos e Certificações", cursos_txt.replace('\n', '<br/>'))
+
+    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
+        adicionar_secao("Idiomas", idiomas_txt.replace('\n', '<br/>'))
+
+    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
+        adicionar_secao("Projetos e Resultados", projetos_txt.replace('\n', '<br/>'))
 
     if habilidades_txt:
         hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
