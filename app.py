@@ -1,6 +1,8 @@
 import streamlit as st
 import docx
 from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -16,7 +18,7 @@ import pypdf
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, fontes otimizadas e alinhamento de contatos blindado.")
+st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas e saída idêntica em Word e PDF.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -106,7 +108,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, ícones perfeitamente sincronizados e máximo de 2 páginas.")
+    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, ícones sincronizados no PDF e documento Word formatado.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -218,46 +220,6 @@ if "curriculo_gerado" in st.session_state:
 
     texto_gerado = st.session_state["curriculo_gerado"]
 
-    # --- GERAÇÃO DE WORD (.DOCX) ---
-    doc = docx.Document()
-    for section in doc.sections:
-        section.top_margin = Inches(0.8)
-        section.bottom_margin = Inches(0.8)
-        section.left_margin = Inches(0.8)
-        section.right_margin = Inches(0.8)
-
-    style = doc.styles['Normal']
-    font = style.font
-    font.name = 'Times New Roman'
-    font.size = Pt(11)
-    font.color.rgb = RGBColor(0, 0, 0)
-
-    p_corpo = doc.add_paragraph()
-    p_corpo.add_run(texto_gerado)
-
-    buffer_word = io.BytesIO()
-    doc.save(buffer_word)
-    buffer_word.seek(0)
-
-    # --- GERAÇÃO DE PDF PERSONALIZADO ---
-    buffer_pdf = io.BytesIO()
-    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
-    styles = getSampleStyleSheet()
-    
-    cor_total = colors.HexColor("#000000")
-
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=10.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
-    
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12.5, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
-    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=4, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
-
-    story = []
-
     def extrair_tag(tag, texto):
         match = re.search(rf'\[{tag}\]\s*(.*?)(?=\[|$)', texto, re.DOTALL)
         return match.group(1).strip() if match else ""
@@ -293,12 +255,155 @@ if "curriculo_gerado" in st.session_state:
             endereco_val = p
 
     endereco_val_limpo = endereco_val.replace('\n', ' • ')
+
+    # --- GERAÇÃO DE WORD (.DOCX) FORMATADO E LIMPO ---
+    doc = docx.Document()
+    for section in doc.sections:
+        section.top_margin = Inches(0.6)
+        section.bottom_margin = Inches(0.6)
+        section.left_margin = Inches(0.6)
+        section.right_margin = Inches(0.6)
+
+    # Função auxiliar para formatar parágrafos do Word
+    def add_p_word(document, text="", style='Normal', bold_prefix="", space_after=2, font_size=10, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
+        p = document.add_paragraph()
+        p.alignment = align
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(space_after)
+
+        if bold_prefix:
+            run_b = p.add_run(bold_prefix)
+            run_b.font.name = 'Times New Roman'
+            run_b.font.size = Pt(font_size)
+            run_b.font.bold = True
+            run_b.font.color.rgb = RGBColor(0, 0, 0)
+
+        if text:
+            run = p.add_run(text)
+            run.font.name = 'Times New Roman'
+            run.font.size = Pt(font_size)
+            run.font.bold = is_bold
+            run.font.italic = is_italic
+            run.font.color.rgb = RGBColor(0, 0, 0)
+        return p
+
+    def add_titulo_word(document, titulo):
+        add_p_word(document, text=titulo, font_size=10.5, is_bold=True, space_after=3)
+
+    # Cabeçalho Word (Nome e Cargo)
+    add_p_word(doc, text=nome_txt, font_size=15, is_bold=True, space_after=1)
+    add_p_word(doc, text=cargo_txt, font_size=10.5, is_italic=True, space_after=4)
+
+    # Tabela de Contatos Word
+    table_contatos = doc.add_table(rows=4, cols=1)
+    table_contatos.alignment = WD_TABLE_ALIGNMENT.RIGHT
+    for i, txt in enumerate([endereco_val_limpo, telefone_val, email_val, linkedin_val]):
+        row_p = table_contatos.rows[i].cells[0].paragraphs[0]
+        row_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        row_p.paragraph_format.space_after = Pt(1)
+        r = row_p.add_run(txt)
+        r.font.name = 'Times New Roman'
+        r.font.size = Pt(9)
+        r.font.color.rgb = RGBColor(0, 0, 0)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)
+
+    # Perfil Profissional Word
+    if perfil_txt:
+        add_titulo_word(doc, "Perfil Profissional")
+        for p_line in perfil_txt.split('\n'):
+            if p_line.strip():
+                add_p_word(doc, text=p_line.strip(), space_after=4, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+
+    # Formação Acadêmica Word
+    if formacao_txt:
+        add_titulo_word(doc, "Formação Acadêmica")
+        for f_line in formacao_txt.split('\n'):
+            if f_line.strip():
+                add_p_word(doc, text=f_line.strip(), space_after=2)
+
+    # Cursos e Certificações Word
+    if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
+        add_titulo_word(doc, "Cursos e Certificações")
+        for c_line in cursos_txt.split('\n'):
+            if c_line.strip():
+                add_p_word(doc, text=c_line.strip(), space_after=2)
+
+    # Idiomas Word
+    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
+        add_titulo_word(doc, "Idiomas")
+        for i_line in idiomas_txt.split('\n'):
+            if i_line.strip():
+                add_p_word(doc, text=i_line.strip(), space_after=2)
+
+    # Projetos e Resultados Word
+    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
+        add_titulo_word(doc, "Projetos e Resultados")
+        for pr_line in projetos_txt.split('\n'):
+            if pr_line.strip():
+                add_p_word(doc, text=pr_line.strip(), space_after=2)
+
+    # Trabalho Voluntário Word
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+        add_titulo_word(doc, "Trabalho Voluntário")
+        for v_line in voluntariado_txt.split('\n'):
+            if v_line.strip():
+                add_p_word(doc, text=v_line.strip(), space_after=2)
+
+    # Habilidades e Competências Word
+    if habilidades_txt:
+        add_titulo_word(doc, "Habilidades e Competências")
+        for h_line in habilidades_txt.split('\n'):
+            if h_line.strip():
+                item_limpo = h_line.lstrip('-•* ').strip()
+                add_p_word(doc, text=f"• {item_limpo}", space_after=2)
+
+    # Experiência Profissional Word
+    if experiencia_txt:
+        add_titulo_word(doc, "Experiência Profissional")
+        blocos_exp = experiencia_txt.split("\n\n")
+        for bloco in blocos_exp:
+            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            if not linhas_bloco:
+                continue
+            
+            empresa_periodo = linhas_bloco[0]
+            add_p_word(doc, text=empresa_periodo, space_after=1)
+            
+            if len(linhas_bloco) > 1:
+                add_p_word(doc, text=linhas_bloco[1], is_bold=True, space_after=1)
+            
+            for item in linhas_bloco[2:]:
+                item_limpo = item.lstrip('-•* ').strip()
+                add_p_word(doc, text=f"• {item_limpo}", space_after=2)
+
+    buffer_word = io.BytesIO()
+    doc.save(buffer_word)
+    buffer_word.seek(0)
+
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    buffer_pdf = io.BytesIO()
+    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+    styles = getSampleStyleSheet()
     
-    # Prepara o link com tag de hiperlink clicável do PDF sem truncar dados
+    cor_total = colors.HexColor("#000000")
+
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=10.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12.5, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=4, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+
+    story = []
+
     url_linkedin = linkedin_val if linkedin_val.startswith("http") else f"https://{linkedin_val}"
     linkedin_html = f'<a href="{url_linkedin}"><font color="#000000">{linkedin_val.replace("https://", "").replace("http://", "")}</font></a>'
 
-    # Funções de Ícones
+    # Funções de Ícones PDF
     def criar_icone_casa():
         d = Drawing(12, 12)
         d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
@@ -355,7 +460,6 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(cargo_txt, estilo_cargo)
         ]
 
-    # --- SUBTABELAS ATÔMICAS PARA CADA LINHA DE CONTATO (TEXTO + ÍCONE BLINDADOS) ---
     def criar_linha_contato(texto_html, icone_func):
         t = Table([[Paragraph(texto_html, estilo_contato_dir), icone_func()]], colWidths=[222, 18])
         t.setStyle(TableStyle([
@@ -426,7 +530,7 @@ if "curriculo_gerado" in st.session_state:
         
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
-            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            linhas_bloco = [l.strip() for l in bloco.strip().split("\n") if l.strip()]
             if not linhas_bloco:
                 continue
             
