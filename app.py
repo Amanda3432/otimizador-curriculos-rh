@@ -12,11 +12,14 @@ import io
 import os
 import re
 import pypdf
+import urllib.request
+import urllib.parse
+from html.parser import HTMLParser
 
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, contatos limpos sem ícones e unificação Word/PDF.")
+st.markdown("Ferramenta automatizada com leitura avançada de links de vagas, CNH/CREA restritas ao cabeçalho, linha divisória no Word e limite de 2 páginas.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -26,6 +29,36 @@ try:
         ativa_api_key = ""
 except Exception:
     ativa_api_key = ""
+
+# --- FUNÇÃO PARA EXTRAIR TEXTO DE LINKS DE VAGAS (GUPY, LINKEDIN, ETC.) ---
+class HTMLTextExtractor(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.text_accumulator = []
+
+    def handle_data(self, data):
+        text = data.strip()
+        if text:
+            self.text_accumulator.append(text)
+
+    def get_text(self):
+        return ' '.join(self.text_accumulator)
+
+def extrair_texto_de_url(url):
+    try:
+        req = urllib.request.Request(
+            url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            html_bytes = response.read()
+            html_content = html_bytes.decode('utf-8', errors='ignore')
+            parser = HTMLTextExtractor()
+            parser.feed(html_content)
+            texto_cru = parser.get_text()
+            return texto_cru[:4000]
+    except Exception as e:
+        return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
 
 # --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO) ---
 st.sidebar.markdown("### 📋 Modelos Disponíveis")
@@ -100,13 +133,15 @@ with col1:
         descricao_vaga = st.text_area("Cole os requisitos da vaga:", height=150, placeholder="Cole a descrição da vaga aqui...")
     else:
         link_vaga = st.text_input("Cole o link da vaga (ex: Gupy, LinkedIn):", placeholder="https://www.linkedin.com/jobs/... ou https://empresa.gupy.io/...")
-        info_adicional_vaga = st.text_area("Resumo ou Requisitos principais da vaga (opcional para auxiliar a IA):", height=80, placeholder="Ex: Vaga de Assistente de DP, exige Excel avançado...")
+        info_adicional_vaga = st.text_area("Resumo ou Requisitos principais da vaga (opcional para auxiliar a IA):", height=80, placeholder="Ex: Vaga de Analista, exige Excel avançado...")
         if link_vaga:
-            descricao_vaga = f"Link da Vaga: {link_vaga}\nInformações Complementares: {info_adicional_vaga}"
+            with st.spinner("Lendo o conteúdo do link da vaga..."):
+                conteudo_url = extrair_texto_de_url(link_vaga)
+                descricao_vaga = f"Link da Vaga: {link_vaga}\nConteúdo Extraído da Vaga:\n{conteudo_url}\nInformações Complementares: {info_adicional_vaga}"
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com contatos limpos em texto corrido, sem ícones, sem repetições e com padrão idêntico em Word e PDF.")
+    st.info("O sistema fará a leitura do descritivo da vaga, mantendo CNH/CREA exclusivamente no cabeçalho e eliminando qualquer duplicidade.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -139,17 +174,17 @@ if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
         st.warning("⚠️ Por favor, forneça o currículo do cliente e os dados/link da vaga.")
     else:
-        with st.spinner("A processar e reestruturando o currículo..."):
+        with st.spinner("Lendo requisitos da vaga e otimizando o currículo..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
                 prompt_sistema = f"""
-                Você é um consultor especialista em RH. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga desejada.
-                RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte apenas a linguagem para ficar profissional e alinhada à vaga.
+                Você é um consultor especialista em RH e sistemas ATS. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga descrita abaixo.
+                RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte a linguagem técnica e as palavras-chave para atender rigorosamente aos requisitos do descritivo da vaga.
                 
                 REGRAS DE NÃO-REPETIÇÃO E ESTRUTURA:
-                - No [PERFIL PROFISSIONAL], faça uma síntese executiva em 3 parágrafos focada em trajetória e competências centrais. NUNCA cite detalhes específicos de Idiomas (ex: Inglês C1) ou Cursos/Certificações no perfil, pois eles têm seções próprias e exclusivas abaixo.
-                - Evite redundâncias: Cada informação (idioma, curso, projeto, voluntariado) deve aparecer estritamente na sua respectiva seção.
+                - No [PERFIL PROFISSIONAL], faça uma síntese executiva em 3 parágrafos focada em trajetória e competências alinhadas à vaga. NUNCA cite detalhes específicos de Idiomas, Cursos, CNH ou CREA no perfil, pois eles têm locais próprios.
+                - Na tag [CONTATOS], coloque obrigatoriamente: [Bairro, Cidade | Telefone | E-mail | LinkedIn | CNH (se houver) | CREA (se houver)]. NUNCA repita CNH ou CREA em nenhuma outra parte do currículo (como habilidades ou perfil).
                 
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
@@ -160,14 +195,14 @@ if gerar_btn:
                 [Cargo ou até 3 opções baseadas na vaga e na experiência real, separadas por barra]
                 
                 [CONTATOS]
-                [Bairro, Cidade | Telefone | E-mail | LinkedIn | Documentos/Registros adicionais se houver]
+                [Bairro, Cidade | Telefone | E-mail | LinkedIn | CNH ativa (se houver) | CREA ativo (se houver)]
                 
                 [PERFIL PROFISSIONAL]
                 [Parágrafo 1 de introdução e trajetória geral]
                 
-                [Parágrafo 2 de competências e destaques corporativos]
+                [Parágrafo 2 de competências e destaques corporativos alinhados à vaga]
                 
-                [Parágrafo 3 de sistemas, ferramentas e palavras-chave da área]
+                [Parágrafo 3 de sistemas, ferramentas e palavras-chave exigidas no descritivo]
                 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano real]
@@ -185,25 +220,25 @@ if gerar_btn:
                 [Atividade ou projeto voluntário real] (Apenas se houver no original)
                 
                 [HABILIDADES E COMPETÊNCIAS]
-                - [Competência real 1]
-                - [Competência real 2]
+                - [Competência real 1 alinhada à vaga]
+                - [Competência real 2 alinhada à vaga]
                 
                 [EXPERIÊNCIA PROFISSIONAL]
                 [Empresa real] | [Período real]
                 [Cargo real]
-                - [Atividade real reescrita de forma neutra e profissional]
-                - [Atividade real reescrita de forma neutra e profissional]
+                - [Atividade real reescrita com foco nos requisitos da vaga]
+                - [Atividade real reescrita com foco nos requisitos da vaga]
                 
                 Currículo Antigo do Cliente:
                 {curriculo_antigo}
                 
-                Descrição da Vaga / Requisitos:
+                Descritivo da Vaga (Extraído do Link / Informações):
                 {descricao_vaga}
                 """
                 
                 resultado_ia = chamar_gemini_com_retry(client, prompt_sistema)
                 st.session_state["curriculo_gerado"] = resultado_ia
-                st.success("✨ Currículo otimizado com sucesso!")
+                st.success("✨ Currículo lido e otimizado com sucesso com base na vaga!")
                 
             except Exception as e:
                 st.error(f"Ocorreu um erro durante o processamento: {e}")
@@ -233,18 +268,9 @@ if "curriculo_gerado" in st.session_state:
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
 
-    # Formata a linha de contatos limpa em texto corrido (sem ícones)
     contatos_linha_limpa = " • ".join([p.strip() for p in contato_txt.replace('|', '•').split('•') if p.strip()])
 
-    # Extrai o link limpo do LinkedIn para hiperlink se houver
-    url_linkedin = "#"
-    for p in contato_txt.split('|'):
-        if "linkedin" in p.lower() or "in/" in p.lower():
-            url_linkedin = p.strip()
-            if not url_linkedin.startswith("http"):
-                url_linkedin = f"https://{url_linkedin}"
-
-    # --- GERAÇÃO DE WORD (.DOCX) UNIFICADO E FORMATADO ---
+    # --- GERAÇÃO DE WORD (.DOCX) COM LINHA DIVISÓRIA E PADRÃO UNIFICADO ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.6)
@@ -277,10 +303,17 @@ if "curriculo_gerado" in st.session_state:
     def add_titulo_word(document, titulo):
         add_p_word(document, text=titulo, font_size=10.5, is_bold=True, space_after=3)
 
-    # Cabeçalho Word com contatos limpos abaixo
     add_p_word(doc, text=nome_txt, font_size=15, is_bold=True, space_after=1)
     add_p_word(doc, text=cargo_txt, font_size=10.5, is_italic=True, space_after=2)
-    add_p_word(doc, text=contatos_linha_limpa, font_size=9, space_after=6)
+    add_p_word(doc, text=contatos_linha_limpa, font_size=9, space_after=4)
+
+    p_linha = doc.add_paragraph()
+    p_linha.paragraph_format.space_after = Pt(6)
+    p_linha_run = p_linha.add_run("―" * 65)
+    p_linha_run.font.name = 'Times New Roman'
+    p_linha_run.font.size = Pt(9)
+    p_linha_run.font.bold = True
+    p_linha_run.font.color.rgb = RGBColor(0, 0, 0)
 
     if perfil_txt:
         add_titulo_word(doc, "Perfil Profissional")
@@ -344,7 +377,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO (SEM ÍCONES, LIMPO E PROFISSIONAL) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -353,7 +386,7 @@ if "curriculo_gerado" in st.session_state:
 
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_centro = ParagraphStyle('ContatoCentroEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", alignment=0, spaceAfter=6)
+    estilo_contato_centro = ParagraphStyle('ContatoCentroEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", alignment=0, spaceAfter=4)
     
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12.5, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
