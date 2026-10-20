@@ -7,6 +7,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from reportlab.graphics.shapes import Drawing, Rect, Polygon, String
 from google import genai
 import time
 import io
@@ -254,6 +255,48 @@ if "curriculo_gerado" in st.session_state:
 
     endereco_val_limpo = endereco_val.replace('\n', ' • ')
     url_linkedin = linkedin_val if linkedin_val.startswith("http") else f"https://{linkedin_val}"
+    linkedin_html = f'<a href="{url_linkedin}"><font color="#000000">{linkedin_val.replace("https://", "").replace("http://", "")}</font></a>'
+
+    # --- FUNÇÕES DE ÍCONES E AUXILIARES PDF (POSICIONADAS NO TOPO ANTES DO USO) ---
+    def criar_icone_casa():
+        d = Drawing(12, 12)
+        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Polygon([2.5, 6.5, 6, 3, 9.5, 6.5], fillColor=colors.white, strokeColor=colors.white))
+        d.add(Rect(4, 1.5, 4, 4.5, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Rect(5, 1.5, 2, 2.5, fillColor=colors.black, strokeColor=colors.black))
+        return d
+
+    def criar_icone_telefone():
+        d = Drawing(12, 12)
+        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Polygon([3, 8.5, 4.5, 10, 6, 8.5, 5, 7.5, 7.5, 5, 8.5, 6, 10, 4.5, 8.5, 3, 7.5, 4, 5, 6.5], fillColor=colors.white, strokeColor=colors.white))
+        return d
+
+    def criar_icone_email():
+        d = Drawing(12, 12)
+        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d.add(Rect(1.5, 3, 9, 6, rx=1, ry=1, fillColor=colors.white, strokeColor=colors.white))
+        d.add(Polygon([1.8, 8.8, 6, 6, 10.2, 8.8], fillColor=colors.black, strokeColor=colors.black))
+        return d
+
+    def criar_icone_linkedin():
+        d = Drawing(12, 12)
+        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
+        d.add(String(2, 2.5, "in", fontName="Helvetica-Bold", fontSize=8, fillColor=colors.white))
+        return d
+
+    def criar_linha_contato(texto_html, icone_func):
+        t = Table([[Paragraph(texto_html, estilo_contato_dir), icone_func()]], colWidths=[222, 18])
+        t.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (0,0), 'RIGHT'),
+            ('ALIGN', (1,0), (1,0), 'CENTER'),
+            ('TOPPADDING', (0,0), (-1,-1), 1),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ]))
+        return t
 
     # --- GERAÇÃO DE WORD (.DOCX) UNIFICADO E FORMATADO ---
     doc = docx.Document()
@@ -291,7 +334,6 @@ if "curriculo_gerado" in st.session_state:
     add_p_word(doc, text=nome_txt, font_size=15, is_bold=True, space_after=1)
     add_p_word(doc, text=cargo_txt, font_size=10.5, is_italic=True, space_after=4)
 
-    # Tabela de Contatos Word
     table_contatos = doc.add_table(rows=4, cols=1)
     table_contatos.alignment = WD_TABLE_ALIGNMENT.RIGHT
     for i, txt in enumerate([endereco_val_limpo, telefone_val, email_val, linkedin_val]):
@@ -386,35 +428,6 @@ if "curriculo_gerado" in st.session_state:
 
     story = []
 
-    linkedin_html = f'<a href="{url_linkedin}"><font color="#000000">{linkedin_val.replace("https://", "").replace("http://", "")}</font></a>'
-
-    def criar_icone_casa():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Polygon([2.5, 6.5, 6, 3, 9.5, 6.5], fillColor=colors.white, strokeColor=colors.white))
-        d.add(Rect(4, 1.5, 4, 4.5, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Rect(5, 1.5, 2, 2.5, fillColor=colors.black, strokeColor=colors.black))
-        return d
-
-    def criar_icone_telefone():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Polygon([3, 8.5, 4.5, 10, 6, 8.5, 5, 7.5, 7.5, 5, 8.5, 6, 10, 4.5, 8.5, 3, 7.5, 4, 5, 6.5], fillColor=colors.white, strokeColor=colors.white))
-        return d
-
-    def criar_icone_email():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(1.5, 3, 9, 6, rx=1, ry=1, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Polygon([1.8, 8.8, 6, 6, 10.2, 8.8], fillColor=colors.black, strokeColor=colors.black))
-        return d
-
-    def criar_icone_linkedin():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(String(2, 2.5, "in", fontName="Helvetica-Bold", fontSize=8, fillColor=colors.white))
-        return d
-
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
@@ -443,19 +456,6 @@ if "curriculo_gerado" in st.session_state:
             Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
             Paragraph(cargo_txt, estilo_cargo)
         ]
-
-    def criar_linha_contato(texto_html, icone_func):
-        t = Table([[Paragraph(texto_html, estilo_contato_dir), icone_func()]], colWidths=[222, 18])
-        t.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (0,0), (0,0), 'RIGHT'),
-            ('ALIGN', (1,0), (1,0), 'CENTER'),
-            ('TOPPADDING', (0,0), (-1,-1), 1),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
-            ('LEFTPADDING', (0,0), (-1,-1), 0),
-            ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ]))
-        return t
 
     bloco_contatos_direita = [
         criar_linha_contato(endereco_val_limpo, criar_icone_casa),
