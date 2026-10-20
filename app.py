@@ -2,12 +2,10 @@ import streamlit as st
 import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from reportlab.graphics.shapes import Drawing, Rect, Polygon, String
 from google import genai
 import time
 import io
@@ -18,7 +16,7 @@ import pypdf
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, eliminação de redundâncias e padrão unificado Word/PDF.")
+st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, contatos limpos sem ícones e unificação Word/PDF.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -108,7 +106,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, sem repetições de conteúdo e documentos perfeitamente formatados.")
+    st.info("O sistema gerará o currículo com contatos limpos em texto corrido, sem ícones, sem repetições e com padrão idêntico em Word e PDF.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -162,7 +160,7 @@ if gerar_btn:
                 [Cargo ou até 3 opções baseadas na vaga e na experiência real, separadas por barra]
                 
                 [CONTATOS]
-                [Bairro, Cidade | Telefone | E-mail | LinkedIn reais extraídos do currículo]
+                [Bairro, Cidade | Telefone | E-mail | LinkedIn | Documentos/Registros adicionais se houver]
                 
                 [PERFIL PROFISSIONAL]
                 [Parágrafo 1 de introdução e trajetória geral]
@@ -235,68 +233,16 @@ if "curriculo_gerado" in st.session_state:
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
 
-    # --- IDENTIFICAÇÃO RIGOROSA DOS CONTATOS VIA REGEX ---
-    partes_contato = [p.strip() for p in contato_txt.replace('|', '\n').split('\n') if p.strip()]
-    
-    email_val = "E-mail"
-    telefone_val = "Telefone"
-    linkedin_val = "https://www.linkedin.com/in/"
-    endereco_val = "Bairro, Cidade"
+    # Formata a linha de contatos limpa em texto corrido (sem ícones)
+    contatos_linha_limpa = " • ".join([p.strip() for p in contato_txt.replace('|', '•').split('•') if p.strip()])
 
-    for p in partes_contato:
-        if "@" in p:
-            email_val = p
-        elif "linkedin" in p.lower() or "in/" in p.lower():
-            linkedin_val = p
-        elif re.search(r'\d{8,}', re.sub(r'\D', '', p)):
-            telefone_val = p
-        else:
-            endereco_val = p
-
-    endereco_val_limpo = endereco_val.replace('\n', ' • ')
-    url_linkedin = linkedin_val if linkedin_val.startswith("http") else f"https://{linkedin_val}"
-    linkedin_html = f'<a href="{url_linkedin}"><font color="#000000">{linkedin_val.replace("https://", "").replace("http://", "")}</font></a>'
-
-    # --- FUNÇÕES DE ÍCONES E AUXILIARES PDF (POSICIONADAS NO TOPO ANTES DO USO) ---
-    def criar_icone_casa():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Polygon([2.5, 6.5, 6, 3, 9.5, 6.5], fillColor=colors.white, strokeColor=colors.white))
-        d.add(Rect(4, 1.5, 4, 4.5, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Rect(5, 1.5, 2, 2.5, fillColor=colors.black, strokeColor=colors.black))
-        return d
-
-    def criar_icone_telefone():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Polygon([3, 8.5, 4.5, 10, 6, 8.5, 5, 7.5, 7.5, 5, 8.5, 6, 10, 4.5, 8.5, 3, 7.5, 4, 5, 6.5], fillColor=colors.white, strokeColor=colors.white))
-        return d
-
-    def criar_icone_email():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(Rect(1.5, 3, 9, 6, rx=1, ry=1, fillColor=colors.white, strokeColor=colors.white))
-        d.add(Polygon([1.8, 8.8, 6, 6, 10.2, 8.8], fillColor=colors.black, strokeColor=colors.black))
-        return d
-
-    def criar_icone_linkedin():
-        d = Drawing(12, 12)
-        d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
-        d.add(String(2, 2.5, "in", fontName="Helvetica-Bold", fontSize=8, fillColor=colors.white))
-        return d
-
-    def criar_linha_contato(texto_html, icone_func):
-        t = Table([[Paragraph(texto_html, estilo_contato_dir), icone_func()]], colWidths=[222, 18])
-        t.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (0,0), (0,0), 'RIGHT'),
-            ('ALIGN', (1,0), (1,0), 'CENTER'),
-            ('TOPPADDING', (0,0), (-1,-1), 1),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
-            ('LEFTPADDING', (0,0), (-1,-1), 0),
-            ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ]))
-        return t
+    # Extrai o link limpo do LinkedIn para hiperlink se houver
+    url_linkedin = "#"
+    for p in contato_txt.split('|'):
+        if "linkedin" in p.lower() or "in/" in p.lower():
+            url_linkedin = p.strip()
+            if not url_linkedin.startswith("http"):
+                url_linkedin = f"https://{url_linkedin}"
 
     # --- GERAÇÃO DE WORD (.DOCX) UNIFICADO E FORMATADO ---
     doc = docx.Document()
@@ -331,21 +277,10 @@ if "curriculo_gerado" in st.session_state:
     def add_titulo_word(document, titulo):
         add_p_word(document, text=titulo, font_size=10.5, is_bold=True, space_after=3)
 
+    # Cabeçalho Word com contatos limpos abaixo
     add_p_word(doc, text=nome_txt, font_size=15, is_bold=True, space_after=1)
-    add_p_word(doc, text=cargo_txt, font_size=10.5, is_italic=True, space_after=4)
-
-    table_contatos = doc.add_table(rows=4, cols=1)
-    table_contatos.alignment = WD_TABLE_ALIGNMENT.RIGHT
-    for i, txt in enumerate([endereco_val_limpo, telefone_val, email_val, linkedin_val]):
-        row_p = table_contatos.rows[i].cells[0].paragraphs[0]
-        row_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        row_p.paragraph_format.space_after = Pt(1)
-        r = row_p.add_run(txt)
-        r.font.name = 'Times New Roman'
-        r.font.size = Pt(9)
-        r.font.color.rgb = RGBColor(0, 0, 0)
-
-    doc.add_paragraph().paragraph_format.space_after = Pt(4)
+    add_p_word(doc, text=cargo_txt, font_size=10.5, is_italic=True, space_after=2)
+    add_p_word(doc, text=contatos_linha_limpa, font_size=9, space_after=6)
 
     if perfil_txt:
         add_titulo_word(doc, "Perfil Profissional")
@@ -409,7 +344,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO (SEM ÍCONES, LIMPO E PROFISSIONAL) ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -418,7 +353,7 @@ if "curriculo_gerado" in st.session_state:
 
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=8.5, leading=10.5, textColor=cor_total, fontName="Times-Roman", alignment=2) 
+    estilo_contato_centro = ParagraphStyle('ContatoCentroEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", alignment=0, spaceAfter=6)
     
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12.5, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
@@ -436,45 +371,27 @@ if "curriculo_gerado" in st.session_state:
         
         infos_com_foto = [
             Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
-            Paragraph(cargo_txt, estilo_cargo)
+            Paragraph(cargo_txt, estilo_cargo),
+            Paragraph(contatos_linha_limpa, estilo_contato_centro)
         ]
         
         tabela_esquerda_foto = Table([
             [img, infos_com_foto]
-        ], colWidths=[55, 245])
+        ], colWidths=[55, 485])
         tabela_esquerda_foto.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (0,0), (0,0), 'LEFT'),
             ('ALIGN', (1,0), (1,0), 'LEFT'),
-            ('LEFTPADDING', (1,0), (1,0), 5),
+            ('LEFTPADDING', (1,0), (1,0), 6),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ]))
-        coluna_esquerda = tabela_esquerda_foto
+        story.append(tabela_esquerda_foto)
     else:
-        coluna_esquerda = [
-            Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
-            Paragraph(cargo_txt, estilo_cargo)
-        ]
+        story.append(Paragraph(f"<b>{nome_txt}</b>", estilo_nome))
+        story.append(Paragraph(cargo_txt, estilo_cargo))
+        story.append(Paragraph(contatos_linha_limpa, estilo_contato_centro))
 
-    bloco_contatos_direita = [
-        criar_linha_contato(endereco_val_limpo, criar_icone_casa),
-        criar_linha_contato(telefone_val, criar_icone_telefone),
-        criar_linha_contato(email_val, criar_icone_email),
-        criar_linha_contato(linkedin_html, criar_icone_linkedin)
-    ]
-
-    t_header = Table([ [coluna_esquerda, bloco_contatos_direita] ], colWidths=[300, 240])
-    t_header.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('ALIGN', (1,0), (1,0), 'RIGHT'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-    ]))
-    
-    story.append(t_header)
     story.append(Spacer(1, 2))
     story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=4, spaceBefore=0))
 
