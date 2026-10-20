@@ -7,7 +7,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from reportlab.graphics.shapes import Drawing, Rect, Polygon, String
 from google import genai
 import time
 import io
@@ -18,7 +17,7 @@ import pypdf
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas e saída idêntica em Word e PDF.")
+st.markdown("Ferramenta automatizada com suporte a upload, links de vagas, limite de 2 páginas, eliminação de redundâncias e padrão unificado Word/PDF.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -108,7 +107,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, ícones sincronizados no PDF e documento Word formatado.")
+    st.info("O sistema gerará o currículo com fonte Times otimizada (10pt), cores 100% pretas, sem repetições de conteúdo e documentos perfeitamente formatados.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -149,10 +148,9 @@ if gerar_btn:
                 Você é um consultor especialista em RH. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga desejada.
                 RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte apenas a linguagem para ficar profissional e alinhada à vaga.
                 
-                FORMATO EXIGIDO PARA O PERFIL PROFISSIONAL (Dividido em 3 parágrafos fluidos):
-                - Parágrafo 1: Apresentação profissional (Ex: Profissional graduado/cursando em... com sólida trajetória em...) destacando a experiência geral.
-                - Parágrafo 2: Destaques de atuação, hard skills e competências técnicas alinhadas à vaga.
-                - Parágrafo 3: Conhecimentos em sistemas, ferramentas e termos/palavras-chave relevantes.
+                REGRAS DE NÃO-REPETIÇÃO E ESTRUTURA:
+                - No [PERFIL PROFISSIONAL], faça uma síntese executiva em 3 parágrafos focada em trajetória e competências centrais. NUNCA cite detalhes específicos de Idiomas (ex: Inglês C1) ou Cursos/Certificações no perfil, pois eles têm seções próprias e exclusivas abaixo.
+                - Evite redundâncias: Cada informação (idioma, curso, projeto, voluntariado) deve aparecer estritamente na sua respectiva seção.
                 
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
@@ -166,11 +164,11 @@ if gerar_btn:
                 [Bairro, Cidade | Telefone | E-mail | LinkedIn reais extraídos do currículo]
                 
                 [PERFIL PROFISSIONAL]
-                [Parágrafo 1 de introdução e trajetória]
+                [Parágrafo 1 de introdução e trajetória geral]
                 
-                [Parágrafo 2 de competências e destaques]
+                [Parágrafo 2 de competências e destaques corporativos]
                 
-                [Parágrafo 3 de sistemas, ferramentas e palavras-chave]
+                [Parágrafo 3 de sistemas, ferramentas e palavras-chave da área]
                 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano real]
@@ -255,8 +253,9 @@ if "curriculo_gerado" in st.session_state:
             endereco_val = p
 
     endereco_val_limpo = endereco_val.replace('\n', ' • ')
+    url_linkedin = linkedin_val if linkedin_val.startswith("http") else f"https://{linkedin_val}"
 
-    # --- GERAÇÃO DE WORD (.DOCX) FORMATADO E LIMPO ---
+    # --- GERAÇÃO DE WORD (.DOCX) UNIFICADO E FORMATADO ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.6)
@@ -264,8 +263,7 @@ if "curriculo_gerado" in st.session_state:
         section.left_margin = Inches(0.6)
         section.right_margin = Inches(0.6)
 
-    # Função auxiliar para formatar parágrafos do Word
-    def add_p_word(document, text="", style='Normal', bold_prefix="", space_after=2, font_size=10, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
+    def add_p_word(document, text="", bold_prefix="", space_after=2, font_size=10, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
         p = document.add_paragraph()
         p.alignment = align
         p.paragraph_format.space_before = Pt(0)
@@ -290,7 +288,6 @@ if "curriculo_gerado" in st.session_state:
     def add_titulo_word(document, titulo):
         add_p_word(document, text=titulo, font_size=10.5, is_bold=True, space_after=3)
 
-    # Cabeçalho Word (Nome e Cargo)
     add_p_word(doc, text=nome_txt, font_size=15, is_bold=True, space_after=1)
     add_p_word(doc, text=cargo_txt, font_size=10.5, is_italic=True, space_after=4)
 
@@ -308,49 +305,42 @@ if "curriculo_gerado" in st.session_state:
 
     doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
-    # Perfil Profissional Word
     if perfil_txt:
         add_titulo_word(doc, "Perfil Profissional")
         for p_line in perfil_txt.split('\n'):
             if p_line.strip():
                 add_p_word(doc, text=p_line.strip(), space_after=4, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
-    # Formação Acadêmica Word
     if formacao_txt:
         add_titulo_word(doc, "Formação Acadêmica")
         for f_line in formacao_txt.split('\n'):
             if f_line.strip():
                 add_p_word(doc, text=f_line.strip(), space_after=2)
 
-    # Cursos e Certificações Word
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
         add_titulo_word(doc, "Cursos e Certificações")
         for c_line in cursos_txt.split('\n'):
             if c_line.strip():
                 add_p_word(doc, text=c_line.strip(), space_after=2)
 
-    # Idiomas Word
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
         add_titulo_word(doc, "Idiomas")
         for i_line in idiomas_txt.split('\n'):
             if i_line.strip():
                 add_p_word(doc, text=i_line.strip(), space_after=2)
 
-    # Projetos e Resultados Word
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
         add_titulo_word(doc, "Projetos e Resultados")
         for pr_line in projetos_txt.split('\n'):
             if pr_line.strip():
                 add_p_word(doc, text=pr_line.strip(), space_after=2)
 
-    # Trabalho Voluntário Word
     if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
         add_titulo_word(doc, "Trabalho Voluntário")
         for v_line in voluntariado_txt.split('\n'):
             if v_line.strip():
                 add_p_word(doc, text=v_line.strip(), space_after=2)
 
-    # Habilidades e Competências Word
     if habilidades_txt:
         add_titulo_word(doc, "Habilidades e Competências")
         for h_line in habilidades_txt.split('\n'):
@@ -358,7 +348,6 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = h_line.lstrip('-•* ').strip()
                 add_p_word(doc, text=f"• {item_limpo}", space_after=2)
 
-    # Experiência Profissional Word
     if experiencia_txt:
         add_titulo_word(doc, "Experiência Profissional")
         blocos_exp = experiencia_txt.split("\n\n")
@@ -366,13 +355,10 @@ if "curriculo_gerado" in st.session_state:
             linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
             if not linhas_bloco:
                 continue
-            
             empresa_periodo = linhas_bloco[0]
             add_p_word(doc, text=empresa_periodo, space_after=1)
-            
             if len(linhas_bloco) > 1:
                 add_p_word(doc, text=linhas_bloco[1], is_bold=True, space_after=1)
-            
             for item in linhas_bloco[2:]:
                 item_limpo = item.lstrip('-•* ').strip()
                 add_p_word(doc, text=f"• {item_limpo}", space_after=2)
@@ -400,10 +386,8 @@ if "curriculo_gerado" in st.session_state:
 
     story = []
 
-    url_linkedin = linkedin_val if linkedin_val.startswith("http") else f"https://{linkedin_val}"
     linkedin_html = f'<a href="{url_linkedin}"><font color="#000000">{linkedin_val.replace("https://", "").replace("http://", "")}</font></a>'
 
-    # Funções de Ícones PDF
     def criar_icone_casa():
         d = Drawing(12, 12)
         d.add(Rect(0, 0, 12, 12, rx=2, ry=2, fillColor=colors.black, strokeColor=colors.black))
@@ -530,7 +514,7 @@ if "curriculo_gerado" in st.session_state:
         
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
-            linhas_bloco = [l.strip() for l in bloco.strip().split("\n") if l.strip()]
+            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
             if not linhas_bloco:
                 continue
             
