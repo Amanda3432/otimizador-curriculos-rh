@@ -20,7 +20,7 @@ from html.parser import HTMLParser
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com modelo clássico unificado idêntico entre Word e PDF, fontes padronizadas e leitura avançada de vagas.")
+st.markdown("Ferramenta automatizada com modelos Gemini 3.8 / 3.7 / 3.6, modelo clássico unificado idêntico entre Word e PDF, fontes padronizadas e leitura avançada de vagas.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -145,17 +145,16 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará currículos idênticos em Word e PDF seguindo rigorosamente o modelo clássico (contatos à direita, nome/cargo à esquerda).")
+    st.info("O sistema utilizará exclusivamente os modelos Gemini 3.8, 3.7 e 3.6 para gerar currículos idênticos em Word e PDF no modelo clássico.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# --- CHAMADA À API COM NOME DE MODELO ATUALIZADO E CORRETO ---
+# --- CHAMADA À API CONFIGURADA EXCLUSIVAMENTE COM GEMINI 3.8, 3.7 E 3.6 ---
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-exp',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-pro-latest'
+        'gemini-3.8-flash',
+        'gemini-3.7-flash',
+        'gemini-3.6-flash'
     ]
     
     erros_acumulados = []
@@ -174,7 +173,7 @@ def chamar_gemini_com_retry(client, prompt_texto):
             time.sleep(2)
             continue
                 
-    raise Exception(f"Todos os modelos testados falharam. Detalhes dos erros: {erros_acumulados}")
+    raise Exception(f"Todos os modelos testados (3.8, 3.7, 3.6) falharam. Detalhes: {erros_acumulados}")
 
 if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
