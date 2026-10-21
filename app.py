@@ -3,6 +3,8 @@ import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -20,7 +22,7 @@ from html.parser import HTMLParser
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com modelos Gemini 3.8 / 3.7 / 3.6, modelo clássico unificado idêntico entre Word e PDF, fontes padronizadas e leitura avançada de vagas.")
+st.markdown("Ferramenta automatizada com linhas divisórias pretas sólidas entre as seções, espaçamento de perfil ajustado e alinhamento clássico perfeito.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -145,11 +147,11 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema utilizará exclusivamente os modelos Gemini 3.8, 3.7 e 3.6 para gerar currículos idênticos em Word e PDF no modelo clássico.")
+    st.info("O sistema gerará currículos idênticos em Word e PDF com linhas divisórias pretas entre as seções e espaçamento otimizado.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# --- CHAMADA À API CONFIGURADA EXCLUSIVAMENTE COM GEMINI 3.8, 3.7 E 3.6 ---
+# --- CHAMADA À API CONFIGURADA COM GEMINI 3.8, 3.7 E 3.6 ---
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
         'gemini-3.8-flash',
@@ -288,7 +290,7 @@ if "curriculo_gerado" in st.session_state:
 
     linhas_contato = [c.strip() for c in contatos_raw.split('\n') if c.strip()]
 
-    # --- GERAÇÃO DE WORD (.DOCX) - MODELO CLÁSSICO IDÊNTICO AO PDF ---
+    # --- GERAÇÃO DE WORD (.DOCX) - COM LINHAS DIVISÓRIAS SÓLIDAS ACIMA DOS TÍTULOS ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.6)
@@ -318,8 +320,28 @@ if "curriculo_gerado" in st.session_state:
             run.font.color.rgb = RGBColor(0, 0, 0)
         return p
 
-    def add_titulo_word(document, titulo):
-        add_p_word(document, text=titulo, font_size=12, is_bold=True, space_after=4)
+    def add_secao_com_linha_word(document, titulo):
+        # Adiciona parágrafo com borda superior (linha preta sólida) para simular a divisão exata do modelo clássico
+        p_sec = document.add_paragraph()
+        p_sec.paragraph_format.space_before = Pt(8)
+        p_sec.paragraph_format.space_after = Pt(3)
+        
+        # Aplica borda superior sólida no parágrafo do título
+        pPr = p_sec._p.get_or_add_pPr()
+        pBdr = OxmlElement('w:pBdr')
+        top = OxmlElement('w:top')
+        top.set(qn('w:val'), 'single')
+        top.set(qn('w:sz'), '12') # espessura da linha
+        top.set(qn('w:space'), '4')
+        top.set(qn('w:color'), '000000')
+        pBdr.append(top)
+        pPr.append(pBdr)
+
+        r_tit = p_sec.add_run(titulo)
+        r_tit.font.name = 'Times New Roman'
+        r_tit.font.size = Pt(12)
+        r_tit.font.bold = True
+        r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
     # Tabela de Cabeçalho Clássico no Word
     table_header = doc.add_table(rows=1, cols=2)
@@ -328,8 +350,8 @@ if "curriculo_gerado" in st.session_state:
 
     cell_esq = table_header.rows[0].cells[0]
     cell_dir = table_header.rows[0].cells[1]
-    cell_esq.width = Inches(3.5)
-    cell_dir.width = Inches(3.5)
+    cell_esq.width = Inches(3.0)
+    cell_dir.width = Inches(4.0)
 
     p_esq_nome = cell_esq.paragraphs[0]
     p_esq_nome.paragraph_format.space_after = Pt(1)
@@ -353,65 +375,74 @@ if "curriculo_gerado" in st.session_state:
         p_dir.paragraph_format.space_after = Pt(1)
         r_c = p_dir.add_run(c_item)
         r_c.font.name = 'Times New Roman'
-        r_c.font.size = Pt(11)
+        r_c.font.size = Pt(10)
         r_c.font.color.rgb = RGBColor(0, 0, 0)
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+    # Borda inferior sólida preta no cabeçalho
+    tcPr = table_header.rows[0].cells[0]._tc.get_or_add_tcPr()
+    tcPr2 = table_header.rows[0].cells[1]._tc.get_or_add_tcPr()
+    
+    for cell_tc in [tcPr, tcPr2]:
+        tcBorders = OxmlElement('w:tcBorders')
+        bottom = OxmlElement('w:bottom')
+        bottom.set(qn('w:val'), 'single')
+        bottom.set(qn('w:sz'), '12')
+        bottom.set(qn('w:space'), '4')
+        bottom.set(qn('w:color'), '000000')
+        tcBorders.append(bottom)
+        for b_name in ['top', 'left', 'right']:
+            b = OxmlElement(f'w:{b_name}')
+            b.set(qn('w:val'), 'none')
+            tcBorders.append(b)
+        cell_tc.append(tcBorders)
 
-    # Linha divisória preta no Word
-    p_linha = doc.add_paragraph()
-    p_linha.paragraph_format.space_after = Pt(6)
-    p_linha_run = p_linha.add_run("―" * 65)
-    p_linha_run.font.name = 'Times New Roman'
-    p_linha_run.font.size = Pt(11)
-    p_linha_run.font.bold = True
-    p_linha_run.font.color.rgb = RGBColor(0, 0, 0)
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
     if perfil_txt:
-        add_titulo_word(doc, "Perfil Profissional")
+        add_secao_com_linha_word(doc, "Perfil Profissional")
         for p_line in perfil_txt.split('\n'):
             if p_line.strip():
-                add_p_word(doc, text=p_line.strip(), font_size=11, space_after=4, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+                add_p_word(doc, text=p_line.strip(), font_size=11, space_after=2, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
     if formacao_txt:
-        add_titulo_word(doc, "Formação Acadêmica")
+        add_secao_com_linha_word(doc, "Formação Acadêmica")
         for f_line in formacao_txt.split('\n'):
             if f_line.strip():
                 add_p_word(doc, text=f_line.strip(), font_size=11, space_after=2)
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
-        add_titulo_word(doc, "Cursos e Certificações")
+        add_secao_com_linha_word(doc, "Cursos e Certificações")
         for c_line in cursos_txt.split('\n'):
             if c_line.strip():
                 add_p_word(doc, text=c_line.strip(), font_size=11, space_after=2)
 
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
-        add_titulo_word(doc, "Idiomas")
+        add_secao_com_linha_word(doc, "Idiomas")
         for i_line in idiomas_txt.split('\n'):
             if i_line.strip():
                 add_p_word(doc, text=i_line.strip(), font_size=11, space_after=2)
 
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
-        add_titulo_word(doc, "Projetos e Resultados")
+        add_secao_com_linha_word(doc, "Projetos e Resultados")
         for pr_line in projetos_txt.split('\n'):
             if pr_line.strip():
                 add_p_word(doc, text=pr_line.strip(), font_size=11, space_after=2)
 
     if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        add_titulo_word(doc, "Trabalho Voluntário")
+        add_secao_com_linha_word(doc, "Trabalho Voluntário")
         for v_line in voluntariado_txt.split('\n'):
             if v_line.strip():
                 add_p_word(doc, text=v_line.strip(), font_size=11, space_after=2)
 
     if habilidades_txt:
-        add_titulo_word(doc, "Habilidades e Competências")
+        add_secao_com_linha_word(doc, "Habilidades e Competências")
         for h_line in habilidades_txt.split('\n'):
             if h_line.strip():
                 item_limpo = h_line.lstrip('-•* ').strip()
                 add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=2)
 
     if experiencia_txt:
-        add_titulo_word(doc, "Experiência Profissional")
+        add_secao_com_linha_word(doc, "Experiência Profissional")
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
             linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
@@ -429,7 +460,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO - MODELO CLÁSSICO IDÊNTICO AO WORD ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO - COM LINHAS DIVISÓRIAS SÓLIDAS ACIMA DOS TÍTULOS ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -438,11 +469,11 @@ if "curriculo_gerado" in st.session_state:
 
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=12, leading=14, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=1) 
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=1) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=12, leading=14, textColor=cor_total, spaceBefore=6, spaceAfter=4, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
-    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=4, alignment=4)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=12, leading=14, textColor=cor_total, spaceBefore=10, spaceAfter=3, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
     estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
     estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
@@ -459,8 +490,8 @@ if "curriculo_gerado" in st.session_state:
         ancho_dir = 485
     else:
         coluna_esquerda_conteudo = [Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
-        ancho_esq = 270
-        ancho_dir = 270
+        ancho_esq = 240
+        ancho_dir = 300
 
     parágrafos_contatos = [Paragraph(c, estilo_contato_dir) for c in linhas_contato]
 
@@ -473,48 +504,52 @@ if "curriculo_gerado" in st.session_state:
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
         ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
     ]))
 
     story.append(tabela_cabecalho)
-    story.append(Spacer(1, 4))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=4, spaceBefore=0))
+    story.append(HRFlowable(width="100%", thickness=1.0, color=cor_total, spaceAfter=4, spaceBefore=2))
+
+    def add_secao_com_linha_pdf(titulo):
+        # Linha preta sólida acima de cada seção no PDF
+        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=8))
+        story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
 
     if perfil_txt:
-        story.append(Paragraph("<b>Perfil Profissional</b>", estilo_titulo_secao))
+        add_secao_com_linha_pdf("Perfil Profissional")
         paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n') if p.strip()]
         for p_paragrafo in paragrafos_perfil:
             story.append(Paragraph(p_paragrafo, estilo_perfil_texto))
 
     if formacao_txt:
-        story.append(Paragraph("<b>Formação Acadêmica</b>", estilo_titulo_secao))
+        add_secao_com_linha_pdf("Formação Acadêmica")
         story.append(Paragraph(formacao_txt.replace('\n', '<br/>'), estilo_texto))
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
-        story.append(Paragraph("<b>Cursos e Certificações</b>", estilo_titulo_secao))
+        add_secao_com_linha_pdf("Cursos e Certificações")
         story.append(Paragraph(cursos_txt.replace('\n', '<br/>'), estilo_texto))
 
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
-        story.append(Paragraph("<b>Idiomas</b>", estilo_titulo_secao))
+        add_secao_com_linha_pdf("Idiomas")
         story.append(Paragraph(idiomas_txt.replace('\n', '<br/>'), estilo_texto))
 
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
-        story.append(Paragraph("<b>Projetos e Resultados</b>", estilo_titulo_secao))
+        add_secao_com_linha_pdf("Projetos e Resultados")
         story.append(Paragraph(projetos_txt.replace('\n', '<br/>'), estilo_texto))
 
     if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        story.append(Paragraph("<b>Trabalho Voluntário</b>", estilo_titulo_secao))
+        add_secao_com_linha_pdf("Trabalho Voluntário")
         story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
 
     if habilidades_txt:
+        add_secao_com_linha_pdf("Habilidades e Competências")
         hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
-        story.append(Paragraph("<b>Habilidades e Competências</b>", estilo_titulo_secao))
         story.append(Paragraph(hab_formatadas, estilo_texto))
 
     if experiencia_txt:
-        story.append(Paragraph("<b>Experiência Profissional</b>", estilo_titulo_secao))
+        add_secao_com_linha_pdf("Experiência Profissional")
         
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
