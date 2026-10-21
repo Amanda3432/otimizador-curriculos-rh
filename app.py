@@ -149,11 +149,12 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
+# --- CHAMADA À API COM MODELOS ATUALIZADOS E RETRY ROBUSTO ---
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
-        'gemini-2.0-flash',
-        'gemini-3.8-flash',
-        'gemini-3.6-flash'
+        'gemini-2.5-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro'
     ]
     
     erros_acumulados = []
@@ -320,7 +321,7 @@ if "curriculo_gerado" in st.session_state:
     def add_titulo_word(document, titulo):
         add_p_word(document, text=titulo, font_size=12, is_bold=True, space_after=4)
 
-    # Tabela de Cabeçalho Clássico no Word (Nome/Cargo à Esquerda, Contatos à Direita)
+    # Tabela de Cabeçalho Clássico no Word
     table_header = doc.add_table(rows=1, cols=2)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.autofit = False
