@@ -22,7 +22,7 @@ from html.parser import HTMLParser
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com modelos Gemini 3.8 / 3.7 / 3.6, linha única para contatos/LinkedIn, sem linha dupla e voluntariado após a experiência.")
+st.markdown("Ferramenta automatizada com modelos Gemini 3.8 / 3.7 / 3.6, linha única para contatos/LinkedIn, correção definitiva de linha dupla e preservação completa dos cargos.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -147,7 +147,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema utilizará os modelos Gemini 3.8 / 3.7 / 3.6 para gerar currículos perfeitamente formatados sem duplicações de linhas.")
+    st.info("O sistema utilizará os modelos Gemini 3.8 / 3.7 / 3.6 para gerar currículos perfeitamente formatados, com largura otimizada e sem duplicidade de linhas.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -194,7 +194,7 @@ if gerar_btn:
                 - NUNCA cite detalhes específicos de Idiomas, Cursos, CNH, CREA ou CRT no perfil profissional.
                 
                 REGRAS DE ESTRUTURA:
-                - Na tag [CARGO], forneça o cargo principal ou até 2 opções alinhadas e fortes, evitando textos muito longos para não quebrar de forma isolada.
+                - Na tag [CARGO], traga todas as opções de cargos fortes e alinhadas que constam no currículo original do cliente e na vaga (ex: Analista de Benefícios Pleno / Analista de Benefícios Sênior / Analista de RH - Benefícios), sem omitir nenhuma.
                 - Na tag [CONTATOS], coloque cada informação separada por quebra de linha exata para o layout clássico: 
                   [Bairro, Cidade - UF]
                   [Telefone]
@@ -208,7 +208,7 @@ if gerar_btn:
                 [Nome real do candidato extraído do currículo antigo]
                 
                 [CARGO]
-                [Cargo ou até 2 opções fortes baseadas na vaga e na experiência real, separadas por barra]
+                [Cargos completos do candidato separados por barra, mantendo a riqueza de opções original]
                 
                 [CONTATOS]
                 Bairro, Cidade - UF
@@ -284,11 +284,11 @@ if "curriculo_gerado" in st.session_state:
     cursos_txt = extrair_tag("CURSOS E CERTIFICAÇÕES", texto_gerado)
     idiomas_txt = extrair_tag("IDIOMAS", texto_gerado)
     projetos_txt = extrair_tag("PROJETOS E RESULTADOS", texto_gerado)
-    habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
+    habilidades_txt = extrair_tag("HABIIDADES E COMPETÊNCIAS", texto_gerado) or extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
     voluntariado_txt = extrair_tag("TRABALHO VOLUNTÁRIO", texto_gerado)
 
-    # Processamento e limpeza estrita de contatos/LinkedIn para linha única
+    # Processamento e limpeza de contatos para linha única
     linhas_contato_raw = [c.strip() for c in contatos_raw.split('\n') if c.strip()]
     linhas_contato = []
     for line in linhas_contato_raw:
@@ -328,21 +328,11 @@ if "curriculo_gerado" in st.session_state:
             run.font.color.rgb = RGBColor(0, 0, 0)
         return p
 
-    def add_secao_com_linha_word(document, titulo):
+    def add_secao_word(document, titulo):
+        # Criação limpa do título da seção sem borda superior XML para evitar qualquer duplicidade de linha
         p_sec = document.add_paragraph()
         p_sec.paragraph_format.space_before = Pt(8)
         p_sec.paragraph_format.space_after = Pt(3)
-        
-        # Borda superior sólida única acima do título da seção
-        pPr = p_sec._p.get_or_add_pPr()
-        pBdr = OxmlElement('w:pBdr')
-        top = OxmlElement('w:top')
-        top.set(qn('w:val'), 'single')
-        top.set(qn('w:sz'), '12')
-        top.set(qn('w:space'), '4')
-        top.set(qn('w:color'), '000000')
-        pBdr.append(top)
-        pPr.append(pBdr)
 
         r_tit = p_sec.add_run(titulo)
         r_tit.font.name = 'Times New Roman'
@@ -350,15 +340,15 @@ if "curriculo_gerado" in st.session_state:
         r_tit.font.bold = True
         r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Tabela de Cabeçalho no Word (Larguras calibradas para o LinkedIn não quebrar)
+    # Tabela de Cabeçalho no Word (Largura esquerda ampliada para 2.8 polegadas para acomodar os cargos com folga)
     table_header = doc.add_table(rows=1, cols=2)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.autofit = False
 
     cell_esq = table_header.rows[0].cells[0]
     cell_dir = table_header.rows[0].cells[1]
-    cell_esq.width = Inches(2.2)
-    cell_dir.width = Inches(4.8)
+    cell_esq.width = Inches(2.8)
+    cell_dir.width = Inches(4.2)
 
     p_esq_nome = cell_esq.paragraphs[0]
     p_esq_nome.paragraph_format.space_after = Pt(1)
@@ -372,7 +362,7 @@ if "curriculo_gerado" in st.session_state:
     p_esq_cargo.paragraph_format.space_after = Pt(0)
     r_cargo = p_esq_cargo.add_run(cargo_txt)
     r_cargo.font.name = 'Times New Roman'
-    r_cargo.font.size = Pt(11) # Ajustado para 11pt para evitar quebra isolada da última palavra
+    r_cargo.font.size = Pt(10) # 10pt otimizado para acomodar todos os cargos fluentemente
     r_cargo.font.italic = True
     r_cargo.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -385,7 +375,7 @@ if "curriculo_gerado" in st.session_state:
         r_c.font.size = Pt(9.5) if len(c_item) > 35 else Pt(10.5)
         r_c.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Borda inferior SÓLIDA preta no cabeçalho (sem borda superior extra no perfil para evitar duplicidade)
+    # ÚNICA LINHA DIVISÓRIA: Borda inferior sólida preta na tabela do cabeçalho
     tcPr = table_header.rows[0].cells[0]._tc.get_or_add_tcPr()
     tcPr2 = table_header.rows[0].cells[1]._tc.get_or_add_tcPr()
     
@@ -403,47 +393,47 @@ if "curriculo_gerado" in st.session_state:
             tcBorders.append(b)
         cell_tc.append(tcBorders)
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
     if perfil_txt:
-        add_secao_com_linha_word(doc, "Perfil Profissional")
+        add_secao_word(doc, "Perfil Profissional")
         for p_line in perfil_txt.split('\n'):
             if p_line.strip():
                 add_p_word(doc, text=p_line.strip(), font_size=11, space_after=2, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
     if formacao_txt:
-        add_secao_com_linha_word(doc, "Formação Acadêmica")
+        add_secao_word(doc, "Formação Acadêmica")
         for f_line in formacao_txt.split('\n'):
             if f_line.strip():
                 add_p_word(doc, text=f_line.strip(), font_size=11, space_after=2)
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
-        add_secao_com_linha_word(doc, "Cursos e Certificações")
+        add_secao_word(doc, "Cursos e Certificações")
         for c_line in cursos_txt.split('\n'):
             if c_line.strip():
                 add_p_word(doc, text=c_line.strip(), font_size=11, space_after=2)
 
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
-        add_secao_com_linha_word(doc, "Idiomas")
+        add_secao_word(doc, "Idiomas")
         for i_line in idiomas_txt.split('\n'):
             if i_line.strip():
                 add_p_word(doc, text=i_line.strip(), font_size=11, space_after=2)
 
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
-        add_secao_com_linha_word(doc, "Projetos e Resultados")
+        add_secao_word(doc, "Projetos e Resultados")
         for pr_line in projetos_txt.split('\n'):
             if pr_line.strip():
                 add_p_word(doc, text=pr_line.strip(), font_size=11, space_after=2)
 
     if habilidades_txt:
-        add_secao_com_linha_word(doc, "Habilidades e Competências")
+        add_secao_word(doc, "Habilidades e Competências")
         for h_line in habilidades_txt.split('\n'):
             if h_line.strip():
                 item_limpo = h_line.lstrip('-•* ').strip()
                 add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=2)
 
     if experiencia_txt:
-        add_secao_com_linha_word(doc, "Experiência Profissional")
+        add_secao_word(doc, "Experiência Profissional")
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
             linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
@@ -457,9 +447,8 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = item.lstrip('-•* ').strip()
                 add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=2)
 
-    # Trabalho Voluntário rigorosamente após a Experiência Profissional
     if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        add_secao_com_linha_word(doc, "Trabalho Voluntário")
+        add_secao_word(doc, "Trabalho Voluntário")
         for v_line in voluntariado_txt.split('\n'):
             if v_line.strip():
                 add_p_word(doc, text=v_line.strip(), font_size=11, space_after=2)
@@ -476,7 +465,7 @@ if "curriculo_gerado" in st.session_state:
     cor_total = colors.HexColor("#000000")
 
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
     
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=12, leading=14, textColor=cor_total, spaceBefore=4, spaceAfter=3, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
@@ -497,8 +486,8 @@ if "curriculo_gerado" in st.session_state:
         ancho_dir = 485
     else:
         coluna_esquerda_conteudo = [Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
-        ancho_esq = 210
-        ancho_dir = 330
+        ancho_esq = 250
+        ancho_dir = 290
 
     parágrafos_contatos = []
     for c in linhas_contato:
@@ -521,41 +510,41 @@ if "curriculo_gerado" in st.session_state:
     ]))
 
     story.append(tabela_cabecalho)
+    story.append(HRFlowable(width="100%", thickness=1.0, color=cor_total, spaceAfter=4, spaceBefore=2))
 
-    def add_secao_com_linha_pdf(titulo):
-        # Linha preta única e sólida acima de cada seção no PDF (sem duplicidade)
+    def add_secao_pdf(titulo):
         story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=6))
         story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
 
     if perfil_txt:
-        add_secao_com_linha_pdf("Perfil Profissional")
+        add_secao_pdf("Perfil Profissional")
         paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n') if p.strip()]
         for p_paragrafo in paragrafos_perfil:
             story.append(Paragraph(p_paragrafo, estilo_perfil_texto))
 
     if formacao_txt:
-        add_secao_com_linha_pdf("Formação Acadêmica")
+        add_secao_pdf("Formação Acadêmica")
         story.append(Paragraph(formacao_txt.replace('\n', '<br/>'), estilo_texto))
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
-        add_secao_com_linha_pdf("Cursos e Certificações")
+        add_secao_pdf("Cursos e Certificações")
         story.append(Paragraph(cursos_txt.replace('\n', '<br/>'), estilo_texto))
 
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
-        add_secao_com_linha_pdf("Idiomas")
+        add_secao_pdf("Idiomas")
         story.append(Paragraph(idiomas_txt.replace('\n', '<br/>'), estilo_texto))
 
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
-        add_secao_com_linha_pdf("Projetos e Resultados")
+        add_secao_pdf("Projetos e Resultados")
         story.append(Paragraph(projetos_txt.replace('\n', '<br/>'), estilo_texto))
 
     if habilidades_txt:
-        add_secao_com_linha_pdf("Habilidades e Competências")
+        add_secao_pdf("Habilidades e Competências")
         hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
         story.append(Paragraph(hab_formatadas, estilo_texto))
 
     if experiencia_txt:
-        add_secao_com_linha_pdf("Experiência Profissional")
+        add_secao_pdf("Experiência Profissional")
         
         blocos_exp = experiencia_txt.split("\n\n")
         for bloco in blocos_exp:
@@ -585,9 +574,8 @@ if "curriculo_gerado" in st.session_state:
             
             story.append(Spacer(1, 1))
 
-    # Trabalho Voluntário posicionado após a Experiência Profissional no PDF
     if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        add_secao_com_linha_pdf("Trabalho Voluntário")
+        add_secao_pdf("Trabalho Voluntário")
         story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
 
     pdf_doc.build(story)
