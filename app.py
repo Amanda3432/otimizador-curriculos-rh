@@ -149,12 +149,13 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# --- CHAMADA À API COM MODELOS ATUALIZADOS E RETRY ROBUSTO ---
+# --- CHAMADA À API COM NOME DE MODELO ATUALIZADO E CORRETO ---
 def chamar_gemini_com_retry(client, prompt_texto):
     modelos_para_tentar = [
-        'gemini-2.5-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-exp',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-pro-latest'
     ]
     
     erros_acumulados = []
@@ -173,7 +174,7 @@ def chamar_gemini_com_retry(client, prompt_texto):
             time.sleep(2)
             continue
                 
-    raise Exception(f"Todos os modelos testados falharam devido a alta procura ou limites de cota. Detalhes: {erros_acumulados}")
+    raise Exception(f"Todos os modelos testados falharam. Detalhes dos erros: {erros_acumulados}")
 
 if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
