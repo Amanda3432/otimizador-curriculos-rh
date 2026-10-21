@@ -22,7 +22,7 @@ from html.parser import HTMLParser
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com linhas divisórias pretas sólidas entre as seções, espaçamento de perfil ajustado e alinhamento clássico perfeito.")
+st.markdown("Ferramenta automatizada com modelos Gemini 3.8 / 3.7 / 3.6, linha única para contatos/LinkedIn, eliminação de linha dupla e voluntariado após a experiência.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -147,7 +147,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema gerará currículos idênticos em Word e PDF com linhas divisórias pretas entre as seções e espaçamento otimizado.")
+    st.info("O sistema utilizará os modelos Gemini 3.8 / 3.7 / 3.6 para gerar currículos perfeitamente estruturados sem duplicidade de linhas.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -191,7 +191,7 @@ if gerar_btn:
                 
                 PADRÃO EXIGIDO PARA O PERFIL PROFISSIONAL:
                 - Redija o perfil profissional no mesmo estilo analítico e detalhista padrão da consultoria, dividido em parágrafos fluidos (apresentação/trajetória, expertises técnicas e sistemas/ferramentas).
-                - NUNCA cite detalhes específicos de Idiomas, Cursos, CNH ou CREA no perfil profissional.
+                - NUNCA cite detalhes específicos de Idiomas, Cursos, CNH, CREA ou CRT no perfil profissional.
                 
                 REGRAS DE ESTRUTURA:
                 - Na tag [CARGO], forneça o cargo principal ou até 3 opções alinhadas e fortes.
@@ -199,8 +199,8 @@ if gerar_btn:
                   [Bairro, Cidade - UF]
                   [Telefone]
                   [E-mail]
-                  [LinkedIn]
-                  [CNH ativa / CREA ativo se houver]
+                  [LinkedIn] (Apenas o link ou caminho de perfil limpo)
+                  [CNH / CREA / CRT se houver no original]
                 
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
@@ -215,7 +215,7 @@ if gerar_btn:
                 Telefone
                 E-mail
                 LinkedIn
-                (CNH ou CREA se houver)
+                (CNH, CREA ou CRT se houver)
                 
                 [PERFIL PROFISSIONAL]
                 [Parágrafo 1 de introdução e trajetória profissional analítica]
@@ -236,9 +236,6 @@ if gerar_btn:
                 [PROJETOS E RESULTADOS]
                 [Nome/Descrição de projeto ou resultado real com destaque de mérito] (Apenas se houver no original)
                 
-                [TRABALHO VOLUNTÁRIO]
-                [Atividade ou projeto voluntário real] (Apenas se houver no original)
-                
                 [HABILIDADES E COMPETÊNCIAS]
                 - [Competência real 1 alinhada à vaga]
                 - [Competência real 2 alinhada à vaga]
@@ -248,6 +245,9 @@ if gerar_btn:
                 [Cargo real]
                 - [Atividade real reescrita com foco nos requisitos da vaga]
                 - [Atividade real reescrita com foco nos requisitos da vaga]
+                
+                [TRABALHO VOLUNTÁRIO]
+                [Atividade ou projeto voluntário real] (Apenas se houver no original - OBRIGATORIAMENTE APÓS A EXPERIÊNCIA PROFISSIONAL)
                 
                 Currículo Antigo do Cliente:
                 {curriculo_antigo}
@@ -284,13 +284,22 @@ if "curriculo_gerado" in st.session_state:
     cursos_txt = extrair_tag("CURSOS E CERTIFICAÇÕES", texto_gerado)
     idiomas_txt = extrair_tag("IDIOMAS", texto_gerado)
     projetos_txt = extrair_tag("PROJETOS E RESULTADOS", texto_gerado)
-    voluntariado_txt = extrair_tag("TRABALHO VOLUNTÁRIO", texto_gerado)
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
+    voluntariado_txt = extrair_tag("TRABALHO VOLUNTÁRIO", texto_gerado)
 
-    linhas_contato = [c.strip() for c in contatos_raw.split('\n') if c.strip()]
+    # Processamento e limpeza de contatos
+    linhas_contato_raw = [c.strip() for c in contatos_raw.split('\n') if c.strip()]
+    linhas_contato = []
+    for line in linhas_contato_raw:
+        # Simplifica URLs longas do LinkedIn mantendo em linha única limpa
+        if "linkedin.com" in line.lower():
+            clean_link = re.sub(r'https?://(www\.)?', '', line)
+            linhas_contato.append(clean_link)
+        else:
+            linhas_contato.append(line)
 
-    # --- GERAÇÃO DE WORD (.DOCX) - COM LINHAS DIVISÓRIAS SÓLIDAS ACIMA DOS TÍTULOS ---
+    # --- GERAÇÃO DE WORD (.DOCX) ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.6)
@@ -321,17 +330,16 @@ if "curriculo_gerado" in st.session_state:
         return p
 
     def add_secao_com_linha_word(document, titulo):
-        # Adiciona parágrafo com borda superior (linha preta sólida) para simular a divisão exata do modelo clássico
         p_sec = document.add_paragraph()
         p_sec.paragraph_format.space_before = Pt(8)
         p_sec.paragraph_format.space_after = Pt(3)
         
-        # Aplica borda superior sólida no parágrafo do título
+        # Borda superior sólida (uma única linha preta acima de cada título de seção)
         pPr = p_sec._p.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
         top = OxmlElement('w:top')
         top.set(qn('w:val'), 'single')
-        top.set(qn('w:sz'), '12') # espessura da linha
+        top.set(qn('w:sz'), '12')
         top.set(qn('w:space'), '4')
         top.set(qn('w:color'), '000000')
         pBdr.append(top)
@@ -343,15 +351,15 @@ if "curriculo_gerado" in st.session_state:
         r_tit.font.bold = True
         r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Tabela de Cabeçalho Clássico no Word
+    # Tabela de Cabeçalho no Word (Largura ajustada para garantir linha única em contatos/LinkedIn)
     table_header = doc.add_table(rows=1, cols=2)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.autofit = False
 
     cell_esq = table_header.rows[0].cells[0]
     cell_dir = table_header.rows[0].cells[1]
-    cell_esq.width = Inches(3.0)
-    cell_dir.width = Inches(4.0)
+    cell_esq.width = Inches(2.6)
+    cell_dir.width = Inches(4.4)
 
     p_esq_nome = cell_esq.paragraphs[0]
     p_esq_nome.paragraph_format.space_after = Pt(1)
@@ -375,10 +383,11 @@ if "curriculo_gerado" in st.session_state:
         p_dir.paragraph_format.space_after = Pt(1)
         r_c = p_dir.add_run(c_item)
         r_c.font.name = 'Times New Roman'
-        r_c.font.size = Pt(10)
+        # Ajusta dinamicamente a fonte caso a linha do LinkedIn seja extensa para não quebrar
+        r_c.font.size = Pt(9.5) if len(c_item) > 38 else Pt(10.5)
         r_c.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Borda inferior sólida preta no cabeçalho
+    # Borda inferior SÓLIDA preta no cabeçalho (sem duplicidade posterior)
     tcPr = table_header.rows[0].cells[0]._tc.get_or_add_tcPr()
     tcPr2 = table_header.rows[0].cells[1]._tc.get_or_add_tcPr()
     
@@ -396,8 +405,9 @@ if "curriculo_gerado" in st.session_state:
             tcBorders.append(b)
         cell_tc.append(tcBorders)
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(4)
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
+    # Seção: Perfil Profissional (sem linha extra, utilizando apenas a borda superior nativa da função)
     if perfil_txt:
         add_secao_com_linha_word(doc, "Perfil Profissional")
         for p_line in perfil_txt.split('\n'):
@@ -428,12 +438,6 @@ if "curriculo_gerado" in st.session_state:
             if pr_line.strip():
                 add_p_word(doc, text=pr_line.strip(), font_size=11, space_after=2)
 
-    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        add_secao_com_linha_word(doc, "Trabalho Voluntário")
-        for v_line in voluntariado_txt.split('\n'):
-            if v_line.strip():
-                add_p_word(doc, text=v_line.strip(), font_size=11, space_after=2)
-
     if habilidades_txt:
         add_secao_com_linha_word(doc, "Habilidades e Competências")
         for h_line in habilidades_txt.split('\n'):
@@ -456,11 +460,18 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = item.lstrip('-•* ').strip()
                 add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=2)
 
+    # Seção: Trabalho Voluntário (sempre posicionada após as experiências profissionais)
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+        add_secao_com_linha_word(doc, "Trabalho Voluntário")
+        for v_line in voluntariado_txt.split('\n'):
+            if v_line.strip():
+                add_p_word(doc, text=v_line.strip(), font_size=11, space_after=2)
+
     buffer_word = io.BytesIO()
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO - COM LINHAS DIVISÓRIAS SÓLIDAS ACIMA DOS TÍTULOS ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -469,9 +480,8 @@ if "curriculo_gerado" in st.session_state:
 
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=12, leading=14, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
-    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=1) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=12, leading=14, textColor=cor_total, spaceBefore=10, spaceAfter=3, fontName="Times-Bold")
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=12, leading=14, textColor=cor_total, spaceBefore=4, spaceAfter=3, fontName="Times-Bold")
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
     estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=2, alignment=4)
     estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
@@ -490,10 +500,14 @@ if "curriculo_gerado" in st.session_state:
         ancho_dir = 485
     else:
         coluna_esquerda_conteudo = [Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
-        ancho_esq = 240
-        ancho_dir = 300
+        ancho_esq = 220
+        ancho_dir = 320
 
-    parágrafos_contatos = [Paragraph(c, estilo_contato_dir) for c in linhas_contato]
+    parágrafos_contatos = []
+    for c in linhas_contato:
+        f_sz = 9.5 if len(c) > 38 else 10.5
+        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=f_sz, leading=f_sz+2, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=1)
+        parágrafos_contatos.append(Paragraph(c, e_cont))
 
     tabela_cabecalho = Table([
         [coluna_esquerda_conteudo, parágrafos_contatos]
@@ -510,11 +524,10 @@ if "curriculo_gerado" in st.session_state:
     ]))
 
     story.append(tabela_cabecalho)
-    story.append(HRFlowable(width="100%", thickness=1.0, color=cor_total, spaceAfter=4, spaceBefore=2))
 
     def add_secao_com_linha_pdf(titulo):
-        # Linha preta sólida acima de cada seção no PDF
-        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=8))
+        # Linha preta única e sólida acima de cada seção no PDF
+        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=6))
         story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
 
     if perfil_txt:
@@ -538,10 +551,6 @@ if "curriculo_gerado" in st.session_state:
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
         add_secao_com_linha_pdf("Projetos e Resultados")
         story.append(Paragraph(projetos_txt.replace('\n', '<br/>'), estilo_texto))
-
-    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        add_secao_com_linha_pdf("Trabalho Voluntário")
-        story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
 
     if habilidades_txt:
         add_secao_com_linha_pdf("Habilidades e Competências")
@@ -578,6 +587,11 @@ if "curriculo_gerado" in st.session_state:
                 story.append(Paragraph(f"• {item_limpo}", estilo_texto))
             
             story.append(Spacer(1, 1))
+
+    # Trabalho voluntário posicionado após a Experiência Profissional no PDF
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+        add_secao_com_linha_pdf("Trabalho Voluntário")
+        story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
 
     pdf_doc.build(story)
     buffer_pdf.seek(0)
