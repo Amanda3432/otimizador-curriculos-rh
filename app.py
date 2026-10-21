@@ -2,6 +2,7 @@ import streamlit as st
 import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -19,7 +20,7 @@ from html.parser import HTMLParser
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com leitura avançada de links de vagas, CNH/CREA restritas ao cabeçalho, linha divisória no Word e limite de 2 páginas.")
+st.markdown("Ferramenta automatizada com modelo clássico unificado idêntico entre Word e PDF, fontes padronizadas e leitura avançada de vagas.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -30,7 +31,7 @@ try:
 except Exception:
     ativa_api_key = ""
 
-# --- FUNÇÃO PARA EXTRAIR TEXTO DE LINKS DE VAGAS (GUPY, LINKEDIN, ETC.) ---
+# --- FUNÇÃO PARA EXTRAIR TEXTO DE LINKS DE VAGAS ---
 class HTMLTextExtractor(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -48,15 +49,18 @@ def extrair_texto_de_url(url):
     try:
         req = urllib.request.Request(
             url, 
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            }
         )
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=12) as response:
             html_bytes = response.read()
             html_content = html_bytes.decode('utf-8', errors='ignore')
             parser = HTMLTextExtractor()
             parser.feed(html_content)
             texto_cru = parser.get_text()
-            return texto_cru[:4000]
+            return texto_cru[:6000]
     except Exception as e:
         return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
 
@@ -135,13 +139,13 @@ with col1:
         link_vaga = st.text_input("Cole o link da vaga (ex: Gupy, LinkedIn):", placeholder="https://www.linkedin.com/jobs/... ou https://empresa.gupy.io/...")
         info_adicional_vaga = st.text_area("Resumo ou Requisitos principais da vaga (opcional para auxiliar a IA):", height=80, placeholder="Ex: Vaga de Analista, exige Excel avançado...")
         if link_vaga:
-            with st.spinner("Lendo o conteúdo do link da vaga..."):
+            with st.spinner("Lendo o conteúdo completo do link da vaga..."):
                 conteudo_url = extrair_texto_de_url(link_vaga)
                 descricao_vaga = f"Link da Vaga: {link_vaga}\nConteúdo Extraído da Vaga:\n{conteudo_url}\nInformações Complementares: {info_adicional_vaga}"
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema fará a leitura do descritivo da vaga, mantendo CNH/CREA exclusivamente no cabeçalho e eliminando qualquer duplicidade.")
+    st.info("O sistema gerará currículos idênticos em Word e PDF seguindo rigorosamente o modelo clássico (contatos à direita, nome/cargo à esquerda).")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -174,17 +178,26 @@ if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
         st.warning("⚠️ Por favor, forneça o currículo do cliente e os dados/link da vaga.")
     else:
-        with st.spinner("Lendo requisitos da vaga e otimizando o currículo..."):
+        with st.spinner("Lendo descritivo da vaga e otimizando o currículo no padrão clássico..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
                 prompt_sistema = f"""
-                Você é um consultor especialista em RH e sistemas ATS. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga descrita abaixo.
-                RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte a linguagem técnica e as palavras-chave para atender rigorosamente aos requisitos do descritivo da vaga.
+                Você é um consultor especialista em RH e sistemas ATS da Sala de Emprego. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o de forma cirúrgica para os requisitos da vaga descrita abaixo.
+                RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte a linguagem técnica para atender exatamente ao descritivo da vaga fornecido.
                 
-                REGRAS DE NÃO-REPETIÇÃO E ESTRUTURA:
-                - No [PERFIL PROFISSIONAL], faça uma síntese executiva em 3 parágrafos focada em trajetória e competências alinhadas à vaga. NUNCA cite detalhes específicos de Idiomas, Cursos, CNH ou CREA no perfil, pois eles têm locais próprios.
-                - Na tag [CONTATOS], coloque obrigatoriamente: [Bairro, Cidade | Telefone | E-mail | LinkedIn | CNH (se houver) | CREA (se houver)]. NUNCA repita CNH ou CREA em nenhuma outra parte do currículo (como habilidades ou perfil).
+                PADRÃO EXIGIDO PARA O PERFIL PROFISSIONAL:
+                - Redija o perfil profissional no mesmo estilo analítico e detalhista padrão da consultoria, dividido em parágrafos fluidos (apresentação/trajetória, expertises técnicas e sistemas/ferramentas).
+                - NUNCA cite detalhes específicos de Idiomas, Cursos, CNH ou CREA no perfil profissional.
+                
+                REGRAS DE ESTRUTURA:
+                - Na tag [CARGO], forneça o cargo principal ou até 3 opções alinhadas e fortes.
+                - Na tag [CONTATOS], coloque cada informação separada por quebra de linha exata para o layout clássico: 
+                  [Bairro, Cidade - UF]
+                  [Telefone]
+                  [E-mail]
+                  [LinkedIn]
+                  [CNH ativa / CREA ativo se houver]
                 
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
                 
@@ -192,17 +205,21 @@ if gerar_btn:
                 [Nome real do candidato extraído do currículo antigo]
                 
                 [CARGO]
-                [Cargo ou até 3 opções baseadas na vaga e na experiência real, separadas por barra]
+                [Cargo ou até 3 opções fortes baseadas na vaga e na experiência real, separadas por barra]
                 
                 [CONTATOS]
-                [Bairro, Cidade | Telefone | E-mail | LinkedIn | CNH ativa (se houver) | CREA ativo (se houver)]
+                Bairro, Cidade - UF
+                Telefone
+                E-mail
+                LinkedIn
+                (CNH ou CREA se houver)
                 
                 [PERFIL PROFISSIONAL]
-                [Parágrafo 1 de introdução e trajetória geral]
+                [Parágrafo 1 de introdução e trajetória profissional analítica]
                 
-                [Parágrafo 2 de competências e destaques corporativos alinhados à vaga]
+                [Parágrafo 2 de expertises e atuações técnicas alinhadas à vaga]
                 
-                [Parágrafo 3 de sistemas, ferramentas e palavras-chave exigidas no descritivo]
+                [Parágrafo 3 de conhecimentos em sistemas, ferramentas e indicadores]
                 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano real]
@@ -214,7 +231,7 @@ if gerar_btn:
                 [Idioma - Nível real] (Apenas se houver no original)
                 
                 [PROJETOS E RESULTADOS]
-                [Nome/Descrição de projeto ou resultado real] (Apenas se houver no original)
+                [Nome/Descrição de projeto ou resultado real com destaque de mérito] (Apenas se houver no original)
                 
                 [TRABALHO VOLUNTÁRIO]
                 [Atividade ou projeto voluntário real] (Apenas se houver no original)
@@ -238,7 +255,7 @@ if gerar_btn:
                 
                 resultado_ia = chamar_gemini_com_retry(client, prompt_sistema)
                 st.session_state["curriculo_gerado"] = resultado_ia
-                st.success("✨ Currículo lido e otimizado com sucesso com base na vaga!")
+                st.success("✨ Currículo otimizado com sucesso no modelo clássico!")
                 
             except Exception as e:
                 st.error(f"Ocorreu um erro durante o processamento: {e}")
@@ -258,7 +275,7 @@ if "curriculo_gerado" in st.session_state:
 
     nome_txt = extrair_tag("NOME", texto_gerado) or "NOME DO CANDIDATO"
     cargo_txt = extrair_tag("CARGO", texto_gerado) or "Cargo Profissional"
-    contato_txt = extrair_tag("CONTATOS", texto_gerado) or "Bairro, Cidade | Telefone | E-mail | LinkedIn"
+    contatos_raw = extrair_tag("CONTATOS", texto_gerado) or "Bairro, Cidade\nTelefone\nE-mail\nLinkedIn"
     perfil_txt = extrair_tag("PERFIL PROFISSIONAL", texto_gerado)
     formacao_txt = extrair_tag("FORMAÇÃO ACADÊMICA", texto_gerado)
     cursos_txt = extrair_tag("CURSOS E CERTIFICAÇÕES", texto_gerado)
@@ -268,9 +285,9 @@ if "curriculo_gerado" in st.session_state:
     habilidades_txt = extrair_tag("HABILIDADES E COMPETÊNCIAS", texto_gerado)
     experiencia_txt = extrair_tag("EXPERIÊNCIA PROFISSIONAL", texto_gerado)
 
-    contatos_linha_limpa = " • ".join([p.strip() for p in contato_txt.replace('|', '•').split('•') if p.strip()])
+    linhas_contato = [c.strip() for c in contatos_raw.split('\n') if c.strip()]
 
-    # --- GERAÇÃO DE WORD (.DOCX) COM LINHA DIVISÓRIA E PADRÃO UNIFICADO ---
+    # --- GERAÇÃO DE WORD (.DOCX) - MODELO CLÁSSICO IDÊNTICO AO PDF ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.6)
@@ -278,7 +295,7 @@ if "curriculo_gerado" in st.session_state:
         section.left_margin = Inches(0.6)
         section.right_margin = Inches(0.6)
 
-    def add_p_word(document, text="", bold_prefix="", space_after=2, font_size=10, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
+    def add_p_word(document, text="", bold_prefix="", space_after=2, font_size=11, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
         p = document.add_paragraph()
         p.alignment = align
         p.paragraph_format.space_before = Pt(0)
@@ -301,17 +318,51 @@ if "curriculo_gerado" in st.session_state:
         return p
 
     def add_titulo_word(document, titulo):
-        add_p_word(document, text=titulo, font_size=10.5, is_bold=True, space_after=3)
+        add_p_word(document, text=titulo, font_size=12, is_bold=True, space_after=4)
 
-    add_p_word(doc, text=nome_txt, font_size=15, is_bold=True, space_after=1)
-    add_p_word(doc, text=cargo_txt, font_size=10.5, is_italic=True, space_after=2)
-    add_p_word(doc, text=contatos_linha_limpa, font_size=9, space_after=4)
+    # Tabela de Cabeçalho Clássico no Word (Nome/Cargo à Esquerda, Contatos à Direita)
+    table_header = doc.add_table(rows=1, cols=2)
+    table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table_header.autofit = False
 
+    cell_esq = table_header.rows[0].cells[0]
+    cell_dir = table_header.rows[0].cells[1]
+    cell_esq.width = Inches(3.5)
+    cell_dir.width = Inches(3.5)
+
+    p_esq_nome = cell_esq.paragraphs[0]
+    p_esq_nome.paragraph_format.space_after = Pt(1)
+    r_nome = p_esq_nome.add_run(nome_txt)
+    r_nome.font.name = 'Times New Roman'
+    r_nome.font.size = Pt(15)
+    r_nome.font.bold = True
+    r_nome.font.color.rgb = RGBColor(0, 0, 0)
+
+    p_esq_cargo = cell_esq.add_paragraph()
+    p_esq_cargo.paragraph_format.space_after = Pt(0)
+    r_cargo = p_esq_cargo.add_run(cargo_txt)
+    r_cargo.font.name = 'Times New Roman'
+    r_cargo.font.size = Pt(12)
+    r_cargo.font.italic = True
+    r_cargo.font.color.rgb = RGBColor(0, 0, 0)
+
+    for idx, c_item in enumerate(linhas_contato):
+        p_dir = cell_dir.paragraphs[0] if idx == 0 else cell_dir.add_paragraph()
+        p_dir.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p_dir.paragraph_format.space_after = Pt(1)
+        r_c = p_dir.add_run(c_item)
+        r_c.font.name = 'Times New Roman'
+        r_c.font.size = Pt(11)
+        r_c.font.color.rgb = RGBColor(0, 0, 0)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+
+    # Linha divisória preta no Word
     p_linha = doc.add_paragraph()
     p_linha.paragraph_format.space_after = Pt(6)
     p_linha_run = p_linha.add_run("―" * 65)
     p_linha_run.font.name = 'Times New Roman'
-    p_linha_run.font.size = Pt(9)
+    p_linha_run.font.size = Pt(11)
     p_linha_run.font.bold = True
     p_linha_run.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -319,44 +370,44 @@ if "curriculo_gerado" in st.session_state:
         add_titulo_word(doc, "Perfil Profissional")
         for p_line in perfil_txt.split('\n'):
             if p_line.strip():
-                add_p_word(doc, text=p_line.strip(), space_after=4, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+                add_p_word(doc, text=p_line.strip(), font_size=11, space_after=4, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
     if formacao_txt:
         add_titulo_word(doc, "Formação Acadêmica")
         for f_line in formacao_txt.split('\n'):
             if f_line.strip():
-                add_p_word(doc, text=f_line.strip(), space_after=2)
+                add_p_word(doc, text=f_line.strip(), font_size=11, space_after=2)
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
         add_titulo_word(doc, "Cursos e Certificações")
         for c_line in cursos_txt.split('\n'):
             if c_line.strip():
-                add_p_word(doc, text=c_line.strip(), space_after=2)
+                add_p_word(doc, text=c_line.strip(), font_size=11, space_after=2)
 
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
         add_titulo_word(doc, "Idiomas")
         for i_line in idiomas_txt.split('\n'):
             if i_line.strip():
-                add_p_word(doc, text=i_line.strip(), space_after=2)
+                add_p_word(doc, text=i_line.strip(), font_size=11, space_after=2)
 
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
         add_titulo_word(doc, "Projetos e Resultados")
         for pr_line in projetos_txt.split('\n'):
             if pr_line.strip():
-                add_p_word(doc, text=pr_line.strip(), space_after=2)
+                add_p_word(doc, text=pr_line.strip(), font_size=11, space_after=2)
 
     if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
         add_titulo_word(doc, "Trabalho Voluntário")
         for v_line in voluntariado_txt.split('\n'):
             if v_line.strip():
-                add_p_word(doc, text=v_line.strip(), space_after=2)
+                add_p_word(doc, text=v_line.strip(), font_size=11, space_after=2)
 
     if habilidades_txt:
         add_titulo_word(doc, "Habilidades e Competências")
         for h_line in habilidades_txt.split('\n'):
             if h_line.strip():
                 item_limpo = h_line.lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo}", space_after=2)
+                add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=2)
 
     if experiencia_txt:
         add_titulo_word(doc, "Experiência Profissional")
@@ -366,18 +417,18 @@ if "curriculo_gerado" in st.session_state:
             if not linhas_bloco:
                 continue
             empresa_periodo = linhas_bloco[0]
-            add_p_word(doc, text=empresa_periodo, space_after=1)
+            add_p_word(doc, text=empresa_periodo, font_size=11, space_after=1)
             if len(linhas_bloco) > 1:
-                add_p_word(doc, text=linhas_bloco[1], is_bold=True, space_after=1)
+                add_p_word(doc, text=linhas_bloco[1], font_size=11, is_bold=True, space_after=1)
             for item in linhas_bloco[2:]:
                 item_limpo = item.lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo}", space_after=2)
+                add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=2)
 
     buffer_word = io.BytesIO()
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO - MODELO CLÁSSICO IDÊNTICO AO WORD ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -385,14 +436,14 @@ if "curriculo_gerado" in st.session_state:
     cor_total = colors.HexColor("#000000")
 
     estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=2)
-    estilo_contato_centro = ParagraphStyle('ContatoCentroEstilo', parent=styles['Normal'], fontSize=9, leading=11, textColor=cor_total, fontName="Times-Roman", alignment=0, spaceAfter=4)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=12, leading=14, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
+    estilo_contato_dir = ParagraphStyle('ContatoDirEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=1) 
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12.5, textColor=cor_total, spaceBefore=6, spaceAfter=3, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
-    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=4, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=12, leading=14, textColor=cor_total, spaceBefore=6, spaceAfter=4, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=2.5, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=4, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=1)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Bold", spaceAfter=1)
 
     story = []
 
@@ -402,30 +453,32 @@ if "curriculo_gerado" in st.session_state:
             f.write(foto_arquivo.getbuffer())
         img = RLImage(temp_foto_path, width=48, height=48)
         
-        infos_com_foto = [
-            Paragraph(f"<b>{nome_txt}</b>", estilo_nome),
-            Paragraph(cargo_txt, estilo_cargo),
-            Paragraph(contatos_linha_limpa, estilo_contato_centro)
-        ]
-        
-        tabela_esquerda_foto = Table([
-            [img, infos_com_foto]
-        ], colWidths=[55, 485])
-        tabela_esquerda_foto.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (0,0), (0,0), 'LEFT'),
-            ('ALIGN', (1,0), (1,0), 'LEFT'),
-            ('LEFTPADDING', (1,0), (1,0), 6),
-            ('TOPPADDING', (0,0), (-1,-1), 0),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ]))
-        story.append(tabela_esquerda_foto)
+        coluna_esquerda_conteudo = [img, Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
+        ancho_esq = 55
+        ancho_dir = 485
     else:
-        story.append(Paragraph(f"<b>{nome_txt}</b>", estilo_nome))
-        story.append(Paragraph(cargo_txt, estilo_cargo))
-        story.append(Paragraph(contatos_linha_limpa, estilo_contato_centro))
+        coluna_esquerda_conteudo = [Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
+        ancho_esq = 270
+        ancho_dir = 270
 
-    story.append(Spacer(1, 2))
+    parágrafos_contatos = [Paragraph(c, estilo_contato_dir) for c in linhas_contato]
+
+    tabela_cabecalho = Table([
+        [coluna_esquerda_conteudo, parágrafos_contatos]
+    ], colWidths=[ancho_esq, ancho_dir])
+    
+    tabela_cabecalho.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (0,0), (0,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    story.append(tabela_cabecalho)
+    story.append(Spacer(1, 4))
     story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=4, spaceBefore=0))
 
     if perfil_txt:
