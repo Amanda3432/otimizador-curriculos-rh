@@ -22,7 +22,7 @@ from html.parser import HTMLParser
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com modelos Gemini 3.8 / 3.7 / 3.6, linhas divisórias únicas em todas as seções para Word e PDF, e alinhamento clássico perfeito.")
+st.markdown("Ferramenta automatizada com ordenação por grau académico, enxugamento inteligente de experiências longas, linha única de contatos e layout clássico blindado.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -131,7 +131,7 @@ with col1:
                     st.error(f"Erro ao ler DOCX: {e}")
 
     st.markdown("---")
-    st.subheader("2️⃣ Descrição da Vaga")
+    st.subheader("2️⃣ Descrição da Vaga e Cargo-Alvo")
     tipo_entrada_vaga = st.radio("Como deseja inserir a vaga?", ("Digitar / Colar Descrição", "Inserir Link da Vaga (Gupy, LinkedIn, etc.)"), horizontal=True)
     
     descricao_vaga = ""
@@ -145,9 +145,11 @@ with col1:
                 conteudo_url = extrair_texto_de_url(link_vaga)
                 descricao_vaga = f"Link da Vaga: {link_vaga}\nConteúdo Extraído da Vaga:\n{conteudo_url}\nInformações Complementares: {info_adicional_vaga}"
 
+    cargo_alvo_especifico = st.text_input("🎯 Cargo-Alvo / Objetivo Profissional (opcional, ótimo para transição de carreira):", placeholder="Ex: Engenheiro de Segurança do Trabalho / Analista de Processos")
+
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema utilizará os modelos Gemini 3.8 / 3.7 / 3.6 para gerar currículos perfeitamente formatados com linhas divisórias consistentes.")
+    st.info("O sistema gerará currículos perfeitamente otimizados, ordenados por grau académico e limitados às experiências mais relevantes.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -185,73 +187,86 @@ if gerar_btn:
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
+                cargo_direcionamento = f"CARGO ALVO ESPECIFICADO: {cargo_alvo_especifico}" if cargo_alvo_especifico.strip() else "Utilize o cargo principal ou até 3 opções alinhadas extraídas da vaga e do currículo real."
+
                 prompt_sistema = f"""
                 Você é um consultor especialista em RH e sistemas ATS da Sala de Emprego. A sua tarefa é OTIMIZAR o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o de forma cirúrgica para os requisitos da vaga descrita abaixo.
-                RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os factos reais e adapte a linguagem técnica para atender exatamente ao descritivo da vaga fornecido.
-                
-                PADRÃO EXIGIDO PARA O PERFIL PROFISSIONAL:
-                - Redija o perfil profissional no mesmo estilo analítico e detalhista padrão da consultoria, dividido em parágrafos fluidos (apresentação/trajetória, expertises técnicas e sistemas/ferramentas).
-                - NUNCA cite detalhes específicos de Idiomas, Cursos, CNH, CREA ou CRT no perfil profissional.
-                
-                REGRAS DE ESTRUTURA:
-                - Na tag [CARGO], traga todas as opções de cargos fortes e alinhadas que constam no currículo original do cliente e na vaga, sem omitir nenhuma.
-                - Na tag [CONTATOS], coloque cada informação separada por quebra de linha exata para o layout clássico: 
-                  [Bairro, Cidade - UF]
-                  [Telefone]
-                  [E-mail]
-                  [LinkedIn]
-                  [CNH / CREA / CRT se houver no original]
-                
+                RESTRIÇÃO ABSOLUTA: NÃO invente dados, experiências, cursos ou informações que não constem no currículo original. Mantenha os fatos reais.
+
+                DIRETRIZES DE ESTILO E ORGANIZAÇÃO (PADRÃO SALA DE EMPREGO):
+                1. PERFIL PROFISSIONAL:
+                   - Redija um perfil analítico, fluido e dinâmico, sem jargões genéricos repetitivos (evite repetir termos como 'sólida vivência', 'sólida trajetória').
+                   - Foque nas competências técnicas reais, ferramentas e conquistas do candidato.
+                   - NUNCA cite detalhes específicos de Idiomas, Cursos, CNH, CREA ou CRT no perfil profissional.
+
+                2. FORMAÇÃO ACADÊMICA (REGRA DE GRAU ACADÊMICO):
+                   - Ordene OBRIGATORIAMENTE por GRAU ACADÊMICO DECRESCENTE:
+                     Pós-Doutorado -> Doutorado -> Mestrado -> Pós-Graduação / Especialização / MBA -> Graduação -> Curso Técnico.
+                   - A ordem cronológica só deve ser aplicada entre cursos do MESMO grau académico.
+                   - Escreva cada item no formato: [Grau/Curso real] | [Instituição real] - [Ano real].
+
+                3. EXPERIÊNCIA PROFISSIONAL (ENXUGAMENTO INTELIGENTE):
+                   - Inclua NO MÁXIMO as 5 (CINCO) experiências profissionais mais recentes e relevantes.
+                   - Omitir experiências extremamente antigas ou irrelevantes para evitar currículos com mais de 2 ou 3 páginas.
+                   - Omitir experiências temporárias com menos de 3 meses de duração, a menos que sejam cruciais para a vaga.
+
+                4. CURSOS E CERTIFICAÇÕES vs HABILIDADES:
+                   - Coloque na aba 'CURSOS E CERTIFICAÇÕES' apenas cursos com instituição e/ou certificações reais.
+                   - Domínios técnicos gerais, conhecimentos em normas regulamentadoras ou ferramentas devem ir para 'HABILIDADES E COMPETÊNCIAS'.
+
+                5. CARGO:
+                   - {cargo_direcionamento}
+
                 Gere o conteúdo final preenchendo rigorosamente estes blocos com tags em maiúsculas:
-                
+
                 [NOME]
                 [Nome real do candidato extraído do currículo antigo]
-                
+
                 [CARGO]
-                [Cargos completos do candidato separados por barra, mantendo a riqueza de opções original]
-                
+                [Cargo ou até 3 opções fortes baseadas na vaga e na experiência real, separadas por barra]
+
                 [CONTATOS]
                 Bairro, Cidade - UF
                 Telefone
                 E-mail
                 LinkedIn
-                (CNH, CREA ou CRT se houver)
-                
+                (CNH, CREA ou CRT se houver no original)
+
                 [PERFIL PROFISSIONAL]
                 [Parágrafo 1 de introdução e trajetória profissional analítica]
-                
+
                 [Parágrafo 2 de expertises e atuações técnicas alinhadas à vaga]
-                
+
                 [Parágrafo 3 de conhecimentos em sistemas, ferramentas e indicadores]
-                
+
                 [FORMAÇÃO ACADÊMICA]
-                [Curso real | Instituição real - Ano real]
-                
+                [Curso real | Instituição real - Ano real (respeitando estritamente a ordem por grau académico)]
+
                 [CURSOS E CERTIFICAÇÕES]
-                [Curso real | Instituição real - Ano real] (Apenas se houver no original)
-                
+                [Curso/Certificação real | Instituição - Ano] (Apenas cursos e certificações reais)
+
                 [IDIOMAS]
                 [Idioma - Nível real] (Apenas se houver no original)
-                
+
                 [PROJETOS E RESULTADOS]
                 [Nome/Descrição de projeto ou resultado real com destaque de mérito] (Apenas se houver no original)
-                
+
                 [HABILIDADES E COMPETÊNCIAS]
-                - [Competência real 1 alinhada à vaga]
-                - [Competência real 2 alinhada à vaga]
-                
+                - [Competência/Domínio técnico real 1 alinhado à vaga]
+                - [Competência/Domínio técnico real 2 alinhado à vaga]
+
                 [EXPERIÊNCIA PROFISSIONAL]
                 [Empresa real] | [Período real]
                 [Cargo real]
                 - [Atividade real reescrita com foco nos requisitos da vaga]
                 - [Atividade real reescrita com foco nos requisitos da vaga]
-                
+
                 [TRABALHO VOLUNTÁRIO]
                 [Atividade ou projeto voluntário real] (Apenas se houver no original - OBRIGATORIAMENTE APÓS A EXPERIÊNCIA PROFISSIONAL)
-                
+
                 Currículo Antigo do Cliente:
                 {curriculo_antigo}
-                
+
                 Descritivo da Vaga (Extraído do Link / Informações):
                 {descricao_vaga}
                 """
@@ -298,7 +313,7 @@ if "curriculo_gerado" in st.session_state:
         else:
             linhas_contato.append(line)
 
-    # --- GERAÇÃO DE WORD (.DOCX) - COM LINHAS DIVISÓRIAS SÓLIDAS ACIMA DOS TÍTULOS ---
+    # --- GERAÇÃO DE WORD (.DOCX) - LINHAS DIVISÓRIAS SÓLIDAS ACIMA DOS TÍTULOS ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.6)
@@ -329,7 +344,6 @@ if "curriculo_gerado" in st.session_state:
         return p
 
     def add_secao_com_linha_word(document, titulo):
-        # Borda superior sólida (linha preta única acima de cada título de seção)
         p_sec = document.add_paragraph()
         p_sec.paragraph_format.space_before = Pt(8)
         p_sec.paragraph_format.space_after = Pt(3)
@@ -461,7 +475,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO - COM LINHA ÚNICA SÓLIDA ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -514,16 +528,13 @@ if "curriculo_gerado" in st.session_state:
     ]))
 
     story.append(tabela_cabecalho)
-    # Linha divisória única e limpa abaixo do cabeçalho
-    story.append(HRFlowable(width="100%", thickness=1.0, color=cor_total, spaceAfter=4, spaceBefore=2))
 
     def add_secao_pdf(titulo):
-        # Linha divisória única e limpa acima de cada título de seção no PDF (sem duplicidade)
         story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=6))
         story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
 
     if perfil_txt:
-        story.append(Paragraph("<b>Perfil Profissional</b>", estilo_titulo_secao))
+        add_secao_pdf("Perfil Profissional")
         paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n') if p.strip()]
         for p_paragrafo in paragrafos_perfil:
             story.append(Paragraph(p_paragrafo, estilo_perfil_texto))
