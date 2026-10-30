@@ -25,7 +25,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS AVANÇADO PARA OCULTAR ELEMENTOS DE ADMINISTRAÇÃO DO STREAMLIT ---
+# --- CSS PARA ESTILIZAÇÃO E SEGURANÇA VISUAL ---
 hide_streamlit_style = """
     <style>
     #MainMenu {visibility: hidden !important;}
@@ -37,10 +37,6 @@ hide_streamlit_style = """
     div[class*="viewerBadge"] {display: none !important;}
     div[class*="manageApp"] {display: none !important; opacity: 0; pointer-events: none;}
     iframe[title="streamlit_app.m"] {display: none !important;}
-    section[data-testid="stSidebarNav"] + div div iframe {display: none !important;}
-    
-    /* Força ocultação de botões de edição do toolbar superior */
-    header [data-testid="stToolbar"] {visibility: hidden !important;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
@@ -109,7 +105,7 @@ def extrair_texto_de_url(url):
     except Exception as e:
         return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
 
-# --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO) ---
+# --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO - RESTAURADA COMPLETA) ---
 st.sidebar.markdown("### 📋 Modelos Disponíveis")
 modelo_escolhido = st.sidebar.radio(
     "Escolha o formato de saída:",
@@ -122,7 +118,6 @@ if modelo_escolhido == "Modelo Com Foto":
     st.sidebar.markdown("### 🖼️ Foto do Candidato")
     foto_arquivo = st.sidebar.file_uploader("Carregue a foto (JPG ou PNG)", type=["jpg", "jpeg", "png"])
 
-# --- CARREGAMENTO DO MANUAL DO COLABORADOR OFICIAL (PDF) ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📘 Documentação")
 
@@ -397,31 +392,61 @@ if "curriculo_gerado" in st.session_state:
         r_tit.font.bold = True
         r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Tabela do Cabeçalho no Word
+    # Tabela do Cabeçalho no Word (Tratando Modelo Clássico vs Com Foto)
     table_header = doc.add_table(rows=1, cols=2)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.autofit = False
 
     cell_esq = table_header.rows[0].cells[0]
     cell_dir = table_header.rows[0].cells[1]
-    cell_esq.width = Inches(2.9)
-    cell_dir.width = Inches(4.1)
 
-    p_esq_nome = cell_esq.paragraphs[0]
-    p_esq_nome.paragraph_format.space_after = Pt(1)
-    r_nome = p_esq_nome.add_run(nome_txt)
-    r_nome.font.name = 'Times New Roman'
-    r_nome.font.size = Pt(14)
-    r_nome.font.bold = True
-    r_nome.font.color.rgb = RGBColor(0, 0, 0)
+    if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
+        cell_esq.width = Inches(1.5)
+        cell_dir.width = Inches(5.5)
+        
+        temp_foto_path = "temp_foto.png"
+        with open(temp_foto_path, "wb") as f:
+            f.write(foto_arquivo.getbuffer())
+        
+        p_esq_img = cell_esq.paragraphs[0]
+        p_esq_img.paragraph_format.space_after = Pt(1)
+        run_img = p_esq_img.add_run()
+        run_img.add_picture(temp_foto_path, width=Inches(1.1), height=Inches(1.35))
+        
+        p_esq_nome = cell_esq.add_paragraph()
+        p_esq_nome.paragraph_format.space_after = Pt(1)
+        r_nome = p_esq_nome.add_run(nome_txt)
+        r_nome.font.name = 'Times New Roman'
+        r_nome.font.size = Pt(12)
+        r_nome.font.bold = True
+        r_nome.font.color.rgb = RGBColor(0, 0, 0)
 
-    p_esq_cargo = cell_esq.add_paragraph()
-    p_esq_cargo.paragraph_format.space_after = Pt(0)
-    r_cargo = p_esq_cargo.add_run(cargo_txt)
-    r_cargo.font.name = 'Times New Roman'
-    r_cargo.font.size = Pt(9.5)
-    r_cargo.font.italic = True
-    r_cargo.font.color.rgb = RGBColor(0, 0, 0)
+        p_esq_cargo = cell_esq.add_paragraph()
+        p_esq_cargo.paragraph_format.space_after = Pt(0)
+        r_cargo = p_esq_cargo.add_run(cargo_txt)
+        r_cargo.font.name = 'Times New Roman'
+        r_cargo.font.size = Pt(9)
+        r_cargo.font.italic = True
+        r_cargo.font.color.rgb = RGBColor(0, 0, 0)
+    else:
+        cell_esq.width = Inches(2.9)
+        cell_dir.width = Inches(4.1)
+
+        p_esq_nome = cell_esq.paragraphs[0]
+        p_esq_nome.paragraph_format.space_after = Pt(1)
+        r_nome = p_esq_nome.add_run(nome_txt)
+        r_nome.font.name = 'Times New Roman'
+        r_nome.font.size = Pt(14)
+        r_nome.font.bold = True
+        r_nome.font.color.rgb = RGBColor(0, 0, 0)
+
+        p_esq_cargo = cell_esq.add_paragraph()
+        p_esq_cargo.paragraph_format.space_after = Pt(0)
+        r_cargo = p_esq_cargo.add_run(cargo_txt)
+        r_cargo.font.name = 'Times New Roman'
+        r_cargo.font.size = Pt(9.5)
+        r_cargo.font.italic = True
+        r_cargo.font.color.rgb = RGBColor(0, 0, 0)
 
     for idx, c_item in enumerate(linhas_contato):
         p_dir = cell_dir.paragraphs[0] if idx == 0 else cell_dir.add_paragraph()
