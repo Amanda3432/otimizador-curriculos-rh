@@ -22,7 +22,7 @@ from html.parser import HTMLParser
 st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
 
 st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada ajustada estritamente para o limite máximo de **2 PÁGINAS**, ordenação por grau acadêmico e cabeçalhos intactos.")
+st.markdown("Ferramenta automatizada com validação estrita de seções opcionais (voluntariado condicional), contagem inteligente de anos e limite de 2 páginas.")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -149,7 +149,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema sintetiza o currículo para **no máximo 2 páginas**, calculando o tempo de carreira para o perfil profissional.")
+    st.info("O sistema sintetiza o currículo para **no máximo 2 páginas**, validando rigorosamente a omissão de seções inexistentes.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -183,7 +183,7 @@ if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
         st.warning("⚠️ Por favor, forneça o currículo do cliente e os dados/link da vaga.")
     else:
-        with st.spinner("Analisando tempo de experiência, sintetizando e otimizando o currículo para 2 páginas..."):
+        with st.spinner("Analisando dados, validando seções e otimizando o currículo para 2 páginas..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
@@ -199,12 +199,15 @@ if gerar_btn:
                 3. SE O CANDIDATO TIVER 4 ANOS OU MENOS DE EXPERIÊNCIA na área: NUNCA coloque o número de anos; utilize termos qualificativos como "Profissional com sólida trajetória e ampla vivência...", "Profissional com ampla experiência..." ou similar.
                 4. NUNCA cite detalhes específicos de Idiomas, Cursos, CNH, CREA ou CRT no perfil profissional.
 
+                DIRETRIZES PARA SEÇÕES OPCIONAIS (VOLUNTARIADO, IDIOMAS, PROJETOS):
+                - TRABALHO VOLUNTÁRIO: SÓ INCLUA ESTA SEÇÃO SE O CANDIDATO REALMENTE TIVER ATIVIDADE VOLUNTÁRIA NO CURRÍCULO ANTIGO. Se o candidato NÃO tiver, OMITA COMPLETAMENTE a tag e o conteúdo de [TRABALHO VOLUNTÁRIO]. NUNCA escreva frases como "Não constante" ou "Nenhum". O mesmo vale para Idiomas e Projetos se não constarem no original.
+
                 DEMAIS DIRETRIZES:
                 - FORMAÇÃO ACADÊMICA: Ordene por GRAU ACADÊMICO DECRESCENTE (Pós-Doutorado -> Doutorado -> Mestrado -> Pós-Graduação/Especialização/MBA -> Graduação -> Curso Técnico).
                 - EXPERIÊNCIA PROFISSIONAL: Mantenha no máximo de 4 a 5 experiências mais recentes e impactantes (3 a 4 marcadores cada).
                 - CARGO: {cargo_direcionamento}
 
-                Gere o conteúdo preenchendo as tags em maiúsculas:
+                Gere o conteúdo preenchendo as tags em maiúsculas (omita tags de seções que não existam no original):
 
                 [NOME]
                 [Nome real do candidato]
@@ -230,10 +233,10 @@ if gerar_btn:
                 [Curso real | Instituição - Ano]
 
                 [IDIOMAS]
-                [Idioma - Nível real]
+                [Idioma - Nível real] (Apenas se houver no original)
 
                 [PROJETOS E RESULTADOS]
-                [Resultados e projetos com mérito comprovado]
+                [Resultados e projetos com mérito comprovado] (Apenas se houver no original)
 
                 [HABILIDADES E COMPETÊNCIAS]
                 - [Competência/Domínio técnico real]
@@ -244,7 +247,7 @@ if gerar_btn:
                 - [Atividade/resultado conciso e relevante]
 
                 [TRABALHO VOLUNTÁRIO]
-                [Atividade voluntária real (apenas se houver)]
+                [Atividade voluntária real] (Apenas preencha se houver no original. Caso contrário, NÃO INCLUA esta tag).
 
                 Currículo Antigo do Cliente:
                 {curriculo_antigo}
@@ -255,7 +258,7 @@ if gerar_btn:
                 
                 resultado_ia = chamar_gemini_com_retry(client, prompt_sistema)
                 st.session_state["curriculo_gerado"] = resultado_ia
-                st.success("✨ Currículo otimizado com contagem de tempo de carreira e ajustado para 2 páginas!")
+                st.success("✨ Currículo otimizado com sucesso e seções opcionais validadas!")
                 
             except Exception as e:
                 st.error(f"Ocorreu um erro durante o processamento: {e}")
@@ -295,17 +298,16 @@ if "curriculo_gerado" in st.session_state:
     # --- GERAÇÃO DE WORD (.DOCX) - OTIMIZADO PARA 2 PÁGINAS ---
     doc = docx.Document()
     for section in doc.sections:
-        section.top_margin = Inches(0.45)
-        section.bottom_margin = Inches(0.45)
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)
 
-    def add_p_word(document, text="", bold_prefix="", space_after=1.2, font_size=10, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
+    def add_p_word(document, text="", bold_prefix="", space_after=1.5, font_size=10.5, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
         p = document.add_paragraph()
         p.alignment = align
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(space_after)
-        p.paragraph_format.keep_with_next = True
 
         if bold_prefix:
             run_b = p.add_run(bold_prefix)
@@ -325,9 +327,8 @@ if "curriculo_gerado" in st.session_state:
 
     def add_secao_com_linha_word(document, titulo):
         p_sec = document.add_paragraph()
-        p_sec.paragraph_format.space_before = Pt(4)
+        p_sec.paragraph_format.space_before = Pt(5)
         p_sec.paragraph_format.space_after = Pt(2)
-        p_sec.paragraph_format.keep_with_next = True
         
         pPr = p_sec._p.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
@@ -341,7 +342,7 @@ if "curriculo_gerado" in st.session_state:
 
         r_tit = p_sec.add_run(titulo)
         r_tit.font.name = 'Times New Roman'
-        r_tit.font.size = Pt(11)
+        r_tit.font.size = Pt(11.5)
         r_tit.font.bold = True
         r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -352,14 +353,14 @@ if "curriculo_gerado" in st.session_state:
 
     cell_esq = table_header.rows[0].cells[0]
     cell_dir = table_header.rows[0].cells[1]
-    cell_esq.width = Inches(3.0)
-    cell_dir.width = Inches(4.0)
+    cell_esq.width = Inches(2.9)
+    cell_dir.width = Inches(4.1)
 
     p_esq_nome = cell_esq.paragraphs[0]
     p_esq_nome.paragraph_format.space_after = Pt(1)
     r_nome = p_esq_nome.add_run(nome_txt)
     r_nome.font.name = 'Times New Roman'
-    r_nome.font.size = Pt(13.5)
+    r_nome.font.size = Pt(14)
     r_nome.font.bold = True
     r_nome.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -377,7 +378,7 @@ if "curriculo_gerado" in st.session_state:
         p_dir.paragraph_format.space_after = Pt(1)
         r_c = p_dir.add_run(c_item)
         r_c.font.name = 'Times New Roman'
-        r_c.font.size = Pt(8.5) if len(c_item) > 35 else Pt(9.5)
+        r_c.font.size = Pt(9) if len(c_item) > 35 else Pt(10)
         r_c.font.color.rgb = RGBColor(0, 0, 0)
 
     tcPr = table_header.rows[0].cells[0]._tc.get_or_add_tcPr()
@@ -396,38 +397,38 @@ if "curriculo_gerado" in st.session_state:
         add_secao_com_linha_word(doc, "Perfil Profissional")
         for p_line in perfil_txt.split('\n'):
             if p_line.strip():
-                add_p_word(doc, text=p_line.strip(), font_size=9.5, space_after=1.2, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+                add_p_word(doc, text=p_line.strip(), font_size=10, space_after=1.5, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
     if formacao_txt:
         add_secao_com_linha_word(doc, "Formação Acadêmica")
         for f_line in formacao_txt.split('\n'):
             if f_line.strip():
-                add_p_word(doc, text=f_line.strip(), font_size=9.5, space_after=1.2)
+                add_p_word(doc, text=f_line.strip(), font_size=10, space_after=1.5)
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
         add_secao_com_linha_word(doc, "Cursos e Certificações")
         for c_line in cursos_txt.split('\n'):
             if c_line.strip():
-                add_p_word(doc, text=c_line.strip(), font_size=9.5, space_after=1.2)
+                add_p_word(doc, text=c_line.strip(), font_size=10, space_after=1.5)
 
-    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
+    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt and "não constante" not in idiomas_txt.lower():
         add_secao_com_linha_word(doc, "Idiomas")
         for i_line in idiomas_txt.split('\n'):
             if i_line.strip():
-                add_p_word(doc, text=i_line.strip(), font_size=9.5, space_after=1.2)
+                add_p_word(doc, text=i_line.strip(), font_size=10, space_after=1.5)
 
-    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
+    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt and "não constante" not in projetos_txt.lower():
         add_secao_com_linha_word(doc, "Projetos e Resultados")
         for pr_line in projetos_txt.split('\n'):
             if pr_line.strip():
-                add_p_word(doc, text=pr_line.strip(), font_size=9.5, space_after=1.2)
+                add_p_word(doc, text=pr_line.strip(), font_size=10, space_after=1.5)
 
     if habilidades_txt:
         add_secao_com_linha_word(doc, "Habilidades e Competências")
         for h_line in habilidades_txt.split('\n'):
             if h_line.strip():
                 item_limpo = h_line.lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo}", font_size=9.5, space_after=1.2)
+                add_p_word(doc, text=f"• {item_limpo}", font_size=10, space_after=1.5)
 
     if experiencia_txt:
         add_secao_com_linha_word(doc, "Experiência Profissional")
@@ -437,18 +438,18 @@ if "curriculo_gerado" in st.session_state:
             if not linhas_bloco:
                 continue
             empresa_periodo = linhas_bloco[0]
-            add_p_word(doc, text=empresa_periodo, font_size=9.5, space_after=1)
+            add_p_word(doc, text=empresa_periodo, font_size=10, space_after=1)
             if len(linhas_bloco) > 1:
-                add_p_word(doc, text=linhas_bloco[1], font_size=9.5, is_bold=True, space_after=1)
+                add_p_word(doc, text=linhas_bloco[1], font_size=10, is_bold=True, space_after=1)
             for item in linhas_bloco[2:]:
                 item_limpo = item.lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo}", font_size=9.5, space_after=1.2)
+                add_p_word(doc, text=f"• {item_limpo}", font_size=10, space_after=1.5)
 
-    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt and "não constante" not in voluntariado_txt.lower():
         add_secao_com_linha_word(doc, "Trabalho Voluntário")
         for v_line in voluntariado_txt.split('\n'):
             if v_line.strip():
-                add_p_word(doc, text=v_line.strip(), font_size=9.5, space_after=1.2)
+                add_p_word(doc, text=v_line.strip(), font_size=10, space_after=1.5)
 
     buffer_word = io.BytesIO()
     doc.save(buffer_word)
@@ -456,19 +457,19 @@ if "curriculo_gerado" in st.session_state:
 
     # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
-    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=28, leftMargin=28, topMargin=28, bottomMargin=28)
+    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=13.5, leading=15, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9, leading=10.5, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=14, leading=16, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=10.5, leading=12, textColor=cor_total, spaceBefore=2, spaceAfter=2, fontName="Times-Bold", keepWithNext=True)
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1, alignment=4)
-    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=9.5, leading=11.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5, keepWithNext=True)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=9.5, leading=11.5, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5, keepWithNext=True)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=13, textColor=cor_total, spaceBefore=3, spaceAfter=2, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5)
 
     story = []
 
@@ -476,20 +477,20 @@ if "curriculo_gerado" in st.session_state:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=42, height=42)
+        img = RLImage(temp_foto_path, width=44, height=44)
         
         coluna_esquerda_conteudo = [img, Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
         ancho_esq = 55
-        ancho_dir = 501
+        ancho_dir = 495
     else:
         coluna_esquerda_conteudo = [Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
-        ancho_esq = 270
-        ancho_dir = 286
+        ancho_esq = 260
+        ancho_dir = 290
 
     parágrafos_contatos = []
     for c in linhas_contato:
-        f_sz = 8.5 if len(c) > 35 else 9
-        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=f_sz, leading=f_sz+1, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
+        f_sz = 9 if len(c) > 35 else 9.5
+        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=f_sz, leading=f_sz+1.5, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
         parágrafos_contatos.append(Paragraph(c, e_cont))
 
     tabela_cabecalho = Table([
@@ -509,7 +510,7 @@ if "curriculo_gerado" in st.session_state:
     story.append(tabela_cabecalho)
 
     def add_secao_pdf(titulo):
-        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=3))
+        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=4))
         story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
 
     if perfil_txt:
@@ -526,11 +527,11 @@ if "curriculo_gerado" in st.session_state:
         add_secao_pdf("Cursos e Certificações")
         story.append(Paragraph(cursos_txt.replace('\n', '<br/>'), estilo_texto))
 
-    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt:
+    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt and "não constante" not in idiomas_txt.lower():
         add_secao_pdf("Idiomas")
         story.append(Paragraph(idiomas_txt.replace('\n', '<br/>'), estilo_texto))
 
-    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt:
+    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt and "não constante" not in projetos_txt.lower():
         add_secao_pdf("Projetos e Resultados")
         story.append(Paragraph(projetos_txt.replace('\n', '<br/>'), estilo_texto))
 
@@ -570,7 +571,7 @@ if "curriculo_gerado" in st.session_state:
             
             story.append(Spacer(1, 0.5))
 
-    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt and "não constante" not in voluntariado_txt.lower():
         add_secao_pdf("Trabalho Voluntário")
         story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
 
@@ -591,11 +592,4 @@ if "curriculo_gerado" in st.session_state:
             use_container_width=True
         )
     with col_d2:
-        st.download_button(
-            label=f"📥 Baixar em PDF ({modelo_escolhido})",
-            data=buffer_pdf,
-            file_name="curriculo_otimizado.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True
-        )
+        st.
