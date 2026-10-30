@@ -25,7 +25,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- INJEÇÃO CSS REFORÇADA PARA OCULTAR 'MANAGE APP' E PROTEGER DADOS PESSOAIS ---
+# --- CSS AVANÇADO PARA OCULTAR ELEMENTOS DE ADMINISTRAÇÃO DO STREAMLIT ---
 hide_streamlit_style = """
     <style>
     #MainMenu {visibility: hidden !important;}
@@ -35,14 +35,12 @@ hide_streamlit_style = """
     /* Oculta o selo flutuante 'Manage app' no canto inferior direito */
     [data-testid="stDecoration"] {display: none !important;}
     div[class*="viewerBadge"] {display: none !important;}
-    div[class*="manageApp"] {display: none !important;}
+    div[class*="manageApp"] {display: none !important; opacity: 0; pointer-events: none;}
     iframe[title="streamlit_app.m"] {display: none !important;}
-    .stApp > header {background: transparent !important;}
+    section[data-testid="stSidebarNav"] + div div iframe {display: none !important;}
     
-    /* Oculta o botão de edição (lápis) e o link do GitHub na barra superior */
-    [data-testid="stToolbar"] a[href*="github.com"] {display: none !important;}
-    [data-testid="stToolbar"] button[title*="Edit"] {display: none !important;}
-    [data-testid="stToolbar"] [aria-label*="Edit"] {display: none !important;}
+    /* Força ocultação de botões de edição do toolbar superior */
+    header [data-testid="stToolbar"] {visibility: hidden !important;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
@@ -65,7 +63,6 @@ except Exception:
 def sanitizar_texto_entrada(texto):
     if not texto:
         return ""
-    # Remove tentativas comuns de prompt injection que tentam burlar instruções da IA
     padroes_maliciosos = [
         r"ignore previous instructions",
         r"ignore as instruções anteriores",
@@ -233,7 +230,6 @@ if gerar_btn:
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
-                # Sanitização dos campos para cibersegurança
                 cv_sanitizado = sanitizar_texto_entrada(curriculo_antigo)
                 vaga_sanitizada = sanitizar_texto_entrada(descricao_vaga)
                 cargo_alvo_sanitizado = sanitizar_texto_entrada(cargo_alvo_especifico)
