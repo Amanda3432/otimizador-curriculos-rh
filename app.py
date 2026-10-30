@@ -22,24 +22,9 @@ from html.parser import HTMLParser
 st.set_page_config(
     page_title="Sala de Emprego | Otimizador de Currículos", 
     page_icon="💼", 
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
-
-# --- CSS PARA ESTILIZAÇÃO E SEGURANÇA VISUAL ---
-hide_streamlit_style = """
-    <style>
-    #MainMenu {visibility: hidden !important;}
-    footer {visibility: hidden !important;}
-    .stDeployButton {display: none !important;}
-    
-    /* Oculta elementos internos de gerenciamento mantendo layout limpo */
-    [data-testid="stDecoration"] {display: none !important;}
-    div[class*="viewerBadge"] {display: none !important;}
-    div[class*="manageApp"] {display: none !important; opacity: 0; pointer-events: none;}
-    iframe[title="streamlit_app.m"] {display: none !important;}
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # --- CABEÇALHO PROFISSIONAL DA CONSULTORIA ---
 st.markdown("<h1 style='text-align: left; color: #111111; font-family: sans-serif; font-size: 2.2rem; margin-bottom: 0px;'>Sala de Emprego — Otimizador de Currículos</h1>", unsafe_allow_html=True)
@@ -105,23 +90,42 @@ def extrair_texto_de_url(url):
     except Exception as e:
         return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
 
-# --- ÁREA PRINCIPAL EM DUAS COLUNAS ---
+# --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO RESTAURADOS) ---
+st.sidebar.markdown("### 📋 Modelos Disponíveis")
+modelo_escolhido = st.sidebar.radio(
+    "Escolha o formato de saída:",
+    ("Modelo Clássico (Sem Foto)", "Modelo Com Foto")
+)
+
+foto_arquivo = None
+if modelo_escolhido == "Modelo Com Foto":
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🖼️ Foto do Candidato")
+    foto_arquivo = st.sidebar.file_uploader("Carregue a foto (JPG ou PNG)", type=["jpg", "jpeg", "png"])
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📘 Documentação")
+
+pdf_manual_path = "Manual_Otimizador_de_Curriculos_2.pdf"
+if os.path.exists(pdf_manual_path):
+    with open(pdf_manual_path, "rb") as f:
+        manual_bytes = f.read()
+    
+    st.sidebar.download_button(
+        label="📥 Baixar Manual do Colaborador (PDF)",
+        data=manual_bytes,
+        file_name="Manual_Otimizador_de_Curriculos_2.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
+else:
+    st.sidebar.warning("⚠️ Arquivo 'Manual_Otimizador_de_Curriculos_2.pdf' não encontrado na pasta do projeto.")
+
+# --- ÁREA PRINCIPAL ---
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("1️⃣ Currículo do Cliente")
-    
-    # SELETOR DE MODELOS MOVIDO PARA A TELA PRINCIPAL (ACESSÍVEL DIRETO)
-    modelo_escolhido = st.radio(
-        "📋 Escolha o formato de saída do currículo:",
-        ("Modelo Clássico (Sem Foto)", "Modelo Com Foto"),
-        horizontal=True
-    )
-
-    foto_arquivo = None
-    if modelo_escolhido == "Modelo Com Foto":
-        foto_arquivo = st.file_uploader("🖼️ Carregue a foto do candidato (JPG ou PNG)", type=["jpg", "jpeg", "png"])
-
     tipo_entrada_cv = st.radio("Como deseja inserir o currículo?", ("Digitar / Colar Texto", "Carregar Arquivo (PDF ou Word)"), horizontal=True)
     
     curriculo_antigo = ""
@@ -170,21 +174,6 @@ with col2:
     st.subheader("3️⃣ Instruções e Execução")
     st.info("Insira os dados do cliente e da vaga para gerar um currículo executivo de alto impacto, estruturado rigorosamente no padrão corporativo da consultoria.")
     
-    # MANUAL DO COLABORADOR NA TELA PRINCIPAL (FÁCIL ACESSO)
-    pdf_manual_path = "Manual_Otimizador_de_Curriculos_2.pdf"
-    if os.path.exists(pdf_manual_path):
-        with open(pdf_manual_path, "rb") as f:
-            manual_bytes = f.read()
-        
-        st.download_button(
-            label="📘 Baixar Manual do Colaborador (PDF)",
-            data=manual_bytes,
-            file_name="Manual_Otimizador_de_Curriculos_2.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
 # --- CHAMADA À API CONFIGURADA COM GEMINI 3.8, 3.7 E 3.6 ---
