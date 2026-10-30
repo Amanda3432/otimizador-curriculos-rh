@@ -19,10 +19,29 @@ import urllib.request
 import urllib.parse
 from html.parser import HTMLParser
 
-st.set_page_config(page_title="Otimizador de Currículos - Padrão Sala de Emprego", page_icon="📄", layout="wide")
+st.set_page_config(
+    page_title="Sala de Emprego | Otimizador de Currículos", 
+    page_icon="💼", 
+    layout="wide"
+)
 
-st.title("📄 Otimizador de Currículos Profissional (Padrão Sala de Emprego)")
-st.markdown("Ferramenta automatizada com validação estrita de seções opcionais (voluntariado condicional), contagem inteligente de anos e limite de 2 páginas.")
+# --- ESTILIZAÇÃO CSS PARA OCULTAR O LÁPIS, GITHUB E OTIMIZAR O VISUAL ---
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+    /* Oculta os botões de edição (lápis) e github no topo da página do Streamlit Cloud */
+    header [data-testid="stToolbar"] {display: none !important;}
+    header {background: transparent !important;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+# --- CABEÇALHO PROFISSIONAL DA CONSULTORIA ---
+st.markdown("<h1 style='text-align: left; color: #111111; font-family: sans-serif; font-size: 2.2rem; margin-bottom: 0px;'>Sala de Emprego — Otimizador de Currículos</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: left; color: #555555; font-size: 1.1rem; margin-top: 5px; margin-bottom: 25px;'>Ferramenta de Otimização de Currículo para Triagens em ATS do Sala de Emprego</p>", unsafe_allow_html=True)
+st.markdown("---")
 
 # --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
 try:
@@ -149,7 +168,7 @@ with col1:
 
 with col2:
     st.subheader("3️⃣ Instruções e Execução")
-    st.info("O sistema sintetiza o currículo para **no máximo 2 páginas**, validando rigorosamente a omissão de seções inexistentes.")
+    st.info("Insira os dados do cliente e da vaga para gerar um currículo executivo de alto impacto, estruturado rigorosamente no padrão corporativo da consultoria.")
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
@@ -183,7 +202,7 @@ if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
         st.warning("⚠️ Por favor, forneça o currículo do cliente e os dados/link da vaga.")
     else:
-        with st.spinner("Analisando dados, validando seções e otimizando o currículo para 2 páginas..."):
+        with st.spinner("Analisando perfil, validando requisitos de ATS e sintetizando o currículo corporativo..."):
             try:
                 client = genai.Client(api_key=ativa_api_key)
                 
@@ -258,7 +277,7 @@ if gerar_btn:
                 
                 resultado_ia = chamar_gemini_com_retry(client, prompt_sistema)
                 st.session_state["curriculo_gerado"] = resultado_ia
-                st.success("✨ Currículo otimizado com sucesso e seções opcionais validadas!")
+                st.success("✨ Currículo otimizado com sucesso e validado conforme os padrões corporativos!")
                 
             except Exception as e:
                 st.error(f"Ocorreu um erro durante o processamento: {e}")
