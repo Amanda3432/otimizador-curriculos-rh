@@ -25,15 +25,22 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- ESTILIZAÇÃO CSS PARA OCULTAR O LÁPIS, GITHUB E OTIMIZAR O VISUAL ---
+# --- ESTILIZAÇÃO CSS PARA OCULTAR O 'MANAGE APP', LÁPIS E GITHUB, MANTENDO SHARE E ESTRELA ---
 hide_streamlit_style = """
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
-    /* Oculta os botões de edição (lápis) e github no topo da página do Streamlit Cloud */
-    header [data-testid="stToolbar"] {display: none !important;}
-    header {background: transparent !important;}
+    
+    /* Oculta o selo flutuante 'Manage app' no canto inferior direito para proteger informações pessoais */
+    div[data-testid="stDecoration"] {display: none !important;}
+    iframe[title="streamlit_app.m"] {display: none !important;}
+    section[data-testid="stSidebarNav"] + div div iframe {display: none !important;}
+    .viewerBadge_container__1QSob {display: none !important;}
+    
+    /* Oculta apenas o botão de edição (lápis) e o link do GitHub, preservando Share e a Estrela */
+    header [data-testid="stToolbar"] > div:not(:first-child) {display: none !important;}
+    button[kind="header"] {display: none !important;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
