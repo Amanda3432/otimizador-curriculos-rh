@@ -19,10 +19,12 @@ import urllib.request
 import urllib.parse
 from html.parser import HTMLParser
 
+# Configuração para manter a barra lateral expandida por padrão
 st.set_page_config(
     page_title="Sala de Emprego | Otimizador de Currículos", 
     page_icon="💼", 
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # --- CSS PARA ESTILIZAÇÃO E SEGURANÇA VISUAL ---
@@ -32,7 +34,7 @@ hide_streamlit_style = """
     footer {visibility: hidden !important;}
     .stDeployButton {display: none !important;}
     
-    /* Oculta o selo flutuante 'Manage app' no canto inferior direito */
+    /* Oculta elementos internos de gerenciamento mantendo layout limpo */
     [data-testid="stDecoration"] {display: none !important;}
     div[class*="viewerBadge"] {display: none !important;}
     div[class*="manageApp"] {display: none !important; opacity: 0; pointer-events: none;}
@@ -105,7 +107,7 @@ def extrair_texto_de_url(url):
     except Exception as e:
         return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
 
-# --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO - RESTAURADA COMPLETA) ---
+# --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO) ---
 st.sidebar.markdown("### 📋 Modelos Disponíveis")
 modelo_escolhido = st.sidebar.radio(
     "Escolha o formato de saída:",
