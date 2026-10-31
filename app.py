@@ -433,4 +433,231 @@ if "curriculo_gerado" in st.session_state:
         p_dir.alignment = WD_ALIGN_PARAGRAPH.RIGHT
         p_dir.paragraph_format.space_after = Pt(1)
         r_c = p_dir.add_run(c_item)
-        r_c.font.name = 'Times
+        r_c.font.name = 'Times New Roman'
+        r_c.font.size = Pt(9) if len(c_item) > 35 else Pt(10)
+        r_c.font.color.rgb = RGBColor(0, 0, 0)
+
+    tcPr = table_header.rows[0].cells[0]._tc.get_or_add_tcPr()
+    tcPr2 = table_header.rows[0].cells[1]._tc.get_or_add_tcPr()
+    for cell_tc in [tcPr, tcPr2]:
+        tcBorders = OxmlElement('w:tcBorders')
+        for b_name in ['top', 'bottom', 'left', 'right']:
+            b = OxmlElement(f'w:{b_name}')
+            b.set(qn('w:val'), 'none')
+            tcBorders.append(b)
+        cell_tc.append(tcBorders)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(2)
+
+    if perfil_txt:
+        add_secao_com_linha_word(doc, "Perfil Profissional")
+        for p_line in perfil_txt.split('\n'):
+            if p_line.strip():
+                add_p_word(doc, text=p_line.strip(), font_size=10, space_after=1.5, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+
+    if formacao_txt:
+        add_secao_com_linha_word(doc, "Formação Acadêmica")
+        for f_line in formacao_txt.split('\n'):
+            if f_line.strip():
+                add_p_word(doc, text=f_line.strip(), font_size=10, space_after=1.5)
+
+    if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
+        add_secao_com_linha_word(doc, "Cursos e Certificações")
+        for c_line in cursos_txt.split('\n'):
+            if c_line.strip():
+                add_p_word(doc, text=c_line.strip(), font_size=10, space_after=1.5)
+
+    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt and "não constante" not in idiomas_txt.lower():
+        add_secao_com_linha_word(doc, "Idiomas")
+        for i_line in idiomas_txt.split('\n'):
+            if i_line.strip():
+                add_p_word(doc, text=i_line.strip(), font_size=10, space_after=1.5)
+
+    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt and "não constante" not in projetos_txt.lower():
+        add_secao_com_linha_word(doc, "Projetos e Resultados")
+        for pr_line in projetos_txt.split('\n'):
+            if pr_line.strip():
+                item_limpo_pr = pr_line.lstrip('-•* ').strip()
+                add_p_word(doc, text=f"• {item_limpo_pr}", font_size=10, space_after=1.5)
+
+    if habilidades_txt:
+        add_secao_com_linha_word(doc, "Habilidades e Competências")
+        for h_line in habilidades_txt.split('\n'):
+            if h_line.strip():
+                item_limpo = h_line.lstrip('-•* ').strip()
+                add_p_word(doc, text=f"• {item_limpo}", font_size=10, space_after=1.5)
+
+    if experiencia_txt:
+        add_secao_com_linha_word(doc, "Experiência Profissional")
+        blocos_exp = experiencia_txt.split("\n\n")
+        for bloco in blocos_exp:
+            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            if not linhas_bloco:
+                continue
+            empresa_periodo = linhas_bloco[0]
+            add_p_word(doc, text=empresa_periodo, font_size=10, space_after=1)
+            if len(linhas_bloco) > 1:
+                add_p_word(doc, text=linhas_bloco[1], font_size=10, is_bold=True, space_after=1)
+            for item in linhas_bloco[2:]:
+                item_limpo = item.lstrip('-•* ').strip()
+                add_p_word(doc, text=f"• {item_limpo}", font_size=10, space_after=1.5)
+
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt and "não constante" not in voluntariado_txt.lower():
+        add_secao_com_linha_word(doc, "Trabalho Voluntário")
+        for v_line in voluntariado_txt.split('\n'):
+            if v_line.strip():
+                add_p_word(doc, text=v_line.strip(), font_size=10, space_after=1.5)
+
+    buffer_word = io.BytesIO()
+    doc.save(buffer_word)
+    buffer_word.seek(0)
+
+    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    buffer_pdf = io.BytesIO()
+    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    styles = getSampleStyleSheet()
+    
+    cor_total = colors.HexColor("#000000")
+
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=14, leading=16, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
+    
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=13, textColor=cor_total, spaceBefore=3, spaceAfter=2, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5)
+
+    story = []
+
+    if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
+        temp_foto_path = "temp_foto.png"
+        with open(temp_foto_path, "wb") as f:
+            f.write(foto_arquivo.getbuffer())
+        img = RLImage(temp_foto_path, width=44, height=44)
+        
+        coluna_esquerda_conteudo = [img, Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
+        ancho_esq = 55
+        ancho_dir = 495
+    else:
+        coluna_esquerda_conteudo = [Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
+        ancho_esq = 260
+        ancho_dir = 290
+
+    parágrafos_contatos = []
+    for c in linhas_contato:
+        f_sz = 9 if len(c) > 35 else 9.5
+        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=f_sz, leading=f_sz+1.5, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
+        parágrafos_contatos.append(Paragraph(c, e_cont))
+
+    tabela_cabecalho = Table([
+        [coluna_esquerda_conteudo, parágrafos_contatos]
+    ], colWidths=[ancho_esq, ancho_dir])
+    
+    tabela_cabecalho.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (0,0), (0,0), 'LEFT'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    story.append(tabela_cabecalho)
+
+    def add_secao_pdf(titulo):
+        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=4))
+        story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
+
+    if perfil_txt:
+        add_secao_pdf("Perfil Profissional")
+        paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n') if p.strip()]
+        for p_paragrafo in paragrafos_perfil:
+            story.append(Paragraph(p_paragrafo, estilo_perfil_texto))
+
+    if formacao_txt:
+        add_secao_pdf("Formação Acadêmica")
+        story.append(Paragraph(formacao_txt.replace('\n', '<br/>'), estilo_texto))
+
+    if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
+        add_secao_pdf("Cursos e Certificações")
+        story.append(Paragraph(cursos_txt.replace('\n', '<br/>'), estilo_texto))
+
+    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt and "não constante" not in idiomas_txt.lower():
+        add_secao_pdf("Idiomas")
+        story.append(Paragraph(idiomas_txt.replace('\n', '<br/>'), estilo_texto))
+
+    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt and "não constante" not in projetos_txt.lower():
+        add_secao_pdf("Projetos e Resultados")
+        for pr_line in projetos_txt.split('\n'):
+            if pr_line.strip():
+                item_limpo_pr = pr_line.lstrip('-•* ').strip()
+                story.append(Paragraph(f"• {item_limpo_pr}", estilo_texto))
+
+    if habilidades_txt:
+        add_secao_pdf("Habilidades e Competências")
+        hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
+        story.append(Paragraph(hab_formatadas, estilo_texto))
+
+    if experiencia_txt:
+        add_secao_pdf("Experiência Profissional")
+        
+        blocos_exp = experiencia_txt.split("\n\n")
+        for bloco in blocos_exp:
+            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            if not linhas_bloco:
+                continue
+            
+            empresa_periodo = linhas_bloco[0]
+            
+            if "|" in empresa_periodo:
+                partes_emp = empresa_periodo.split("|")
+                nome_emp = partes_emp[0].strip()
+                resto_emp = partes_emp[1].strip()
+                empresa_formatada = f"<b><i>{nome_emp}</i></b> | {resto_emp}"
+            else:
+                empresa_formatada = f"<b><i>{empresa_periodo}</i></b>"
+                
+            story.append(Paragraph(empresa_formatada, estilo_exp_empresa))
+            
+            if len(linhas_bloco) > 1:
+                cargo_linha = linhas_bloco[1]
+                story.append(Paragraph(f"{cargo_linha}", estilo_exp_cargo))
+            
+            for item in linhas_bloco[2:]:
+                item_limpo = item.lstrip('-•* ').strip()
+                story.append(Paragraph(f"• {item_limpo}", estilo_texto))
+            
+            story.append(Spacer(1, 0.5))
+
+    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt and "não constante" not in voluntariado_txt.lower():
+        add_secao_pdf("Trabalho Voluntário")
+        story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
+
+    pdf_doc.build(story)
+    buffer_pdf.seek(0)
+
+    if os.path.exists("temp_foto.png"):
+        os.remove("temp_foto.png")
+
+    # --- BOTÕES DE DOWNLOAD ---
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        st.download_button(
+            label=f"📥 Baixar em Word ({modelo_escolhido})",
+            data=buffer_word,
+            file_name="curriculo_otimizado.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            type="primary",
+            use_container_width=True
+        )
+    with col_d2:
+        st.download_button(
+            label=f"📥 Baixar em PDF ({modelo_escolhido})",
+            data=buffer_pdf,
+            file_name="curriculo_otimizado.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
