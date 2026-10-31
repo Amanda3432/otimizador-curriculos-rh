@@ -90,7 +90,7 @@ def extrair_texto_de_url(url):
     except Exception as e:
         return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
 
-# --- BARRA LATERAL (SIDEBAR) RECOLOCADA NO LADO ESQUERDO ---
+# --- BARRA LATERAL (MODELOS E DOCUMENTAÇÃO ORIGINAIS) ---
 st.sidebar.markdown("### 📋 Modelos Disponíveis")
 modelo_escolhido = st.sidebar.radio(
     "Escolha o formato de saída:",
