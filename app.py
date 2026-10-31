@@ -26,6 +26,24 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- CSS PARA OCULTAR O LÁPIS DE EDIÇÃO, GITHUB E ELEMENTOS ADMINISTRATIVOS ---
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
+    .stDeployButton {display: none !important;}
+    
+    /* Oculta o ícone de edição (lápis) e links do GitHub no cabeçalho superior */
+    [data-testid="stDecoration"] {display: none !important;}
+    div[class*="viewerBadge"] {display: none !important;}
+    div[class*="manageApp"] {display: none !important; opacity: 0; pointer-events: none;}
+    iframe[title="streamlit_app.m"] {display: none !important;}
+    .css-1544g2n {display: none !important;}
+    .viewerBadge_container__1QSob {display: none !important;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # --- CABEÇALHO PROFISSIONAL DA CONSULTORIA ---
 st.markdown("<h1 style='text-align: left; color: #111111; font-family: sans-serif; font-size: 2.2rem; margin-bottom: 0px;'>Sala de Emprego — Otimizador de Currículos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: left; color: #555555; font-size: 1.1rem; margin-top: 5px; margin-bottom: 25px;'>Ferramenta de Otimização de Currículo para Triagens em ATS do Sala de Emprego</p>", unsafe_allow_html=True)
