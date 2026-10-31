@@ -218,14 +218,15 @@ if gerar_btn:
                 Você é um consultor especialista em RH e sistemas ATS da Sala de Emprego. OTIMIZE e SINTETIZE o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga descrita.
                 
                 RESTRIÇÃO RIGOROSA DE TAMANHO (MÁXIMO 2 PÁGINAS): 
-                O texto gerado DEVE ser extremamente conciso, direto e enxuto para que caiba rigidamente em NO MÁXIMO 2 páginas. Selecione apenas as 3 ou 4 experiências profissionais mais impactantes e reduza descrições longas a no máximo 3 marcadores concisos por cargo.
+                O texto gerado DEVE ser extremamente conciso, direto e enxuto para que caiba rigidamente em NO MÁXIMO 2 páginas. Selecione apenas as 4 experiências profissionais mais importantes e mantenha no máximo 3 marcadores (bullet points) por cargo.
 
-                DIRETRIZES DE ESTRUTURA (OBRIGATÓRIO):
-                1. Mantenha seções rigorosamente separadas pelas tags abaixo. 
-                2. A seção [PROJETOS E RESULTADOS] DEVE conter tópicos separados iniciados por hífen (-) destacando realizações quantificáveis. Nunca misture projetos no perfil profissional.
+                REGRAS RÍGIDAS DE SEPARAÇÃO DE TÓPICOS (EVITAR DUPLICAÇÃO):
+                1. [PERFIL PROFISSIONAL]: Deve conter apenas o resumo da trajetória e expertises gerais. NUNCA coloque lista de projetos, softwares específicos ou certificações aqui.
+                2. [PROJETOS E RESULTADOS]: Deve ser uma seção INDEPENDENTE e ISOLADA, contendo apenas realizações de impacto em formato de tópicos com hífen (-). NUNCA repita esses projetos dentro da descrição das empresas na Experiência Profissional.
+                3. [EXPERIÊNCIA PROFISSIONAL]: Descreva as atividades e conquistas rotineiras de cada cargo, sem duplicar o que já foi resumido em Projetos e Resultados.
 
                 DIRETRIZES PARA O PERFIL PROFISSIONAL:
-                1. Se o candidato tiver mais de 4 anos de experiência na área, inicie declarando a quantidade de anos ("Profissional com mais de X anos de trajetória..."). Se tiver 4 anos ou menos, use termos qualificativos de sólida trajetória sem citar números exatos.
+                1. Se o candidato tiver mais de 4 anos de experiência na área, inicie declarando a quantidade exata de anos ("Profissional com mais de X anos de trajetória..."). Se tiver 4 anos ou menos, use termos qualificativos sem citar números exatos.
                 2. NUNCA cite detalhes de Idiomas, Cursos ou CNH no perfil profissional.
 
                 DEMAIS DIRETRIZES:
@@ -249,7 +250,7 @@ if gerar_btn:
 
                 [PERFIL PROFISSIONAL]
                 [Parágrafo 1 de trajetória e anos/vivência]
-                [Parágrafo 2 de expertises e hard skills]
+                [Parágrafo 2 de expertises gerais]
 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano]
@@ -261,8 +262,8 @@ if gerar_btn:
                 [Idioma - Nível]
 
                 [PROJETOS E RESULTADOS]
-                - [Projeto ou resultado de destaque 1]
-                - [Projeto ou resultado de destaque 2]
+                - [Projeto de impacto 1]
+                - [Projeto de impacto 2]
 
                 [HABILIDADES E COMPETÊNCIAS]
                 - [Competência técnica]
@@ -270,7 +271,7 @@ if gerar_btn:
                 [EXPERIÊNCIA PROFISSIONAL]
                 [Empresa real] | [Período real]
                 [Cargo real]
-                - [Atividade ou resultado relevante]
+                - [Atividade ou responsabilidade relevante]
 
                 [TRABALHO VOLUNTÁRIO]
                 [Atividade voluntária]
@@ -513,149 +514,3 @@ if "curriculo_gerado" in st.session_state:
 
     # --- GERAÇÃO DE PDF PERSONALIZADO ---
     buffer_pdf = io.BytesIO()
-    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-    styles = getSampleStyleSheet()
-    
-    cor_total = colors.HexColor("#000000")
-
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=14, leading=16, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
-    
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=13, textColor=cor_total, spaceBefore=3, spaceAfter=2, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
-    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5)
-
-    story = []
-
-    if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
-        temp_foto_path = "temp_foto.png"
-        with open(temp_foto_path, "wb") as f:
-            f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=44, height=44)
-        
-        coluna_esquerda_conteudo = [img, Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
-        ancho_esq = 55
-        ancho_dir = 495
-    else:
-        coluna_esquerda_conteudo = [Paragraph(f"<b>{nome_txt}</b>", estilo_nome), Paragraph(cargo_txt, estilo_cargo)]
-        ancho_esq = 260
-        ancho_dir = 290
-
-    parágrafos_contatos = []
-    for c in linhas_contato:
-        f_sz = 9 if len(c) > 35 else 9.5
-        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=f_sz, leading=f_sz+1.5, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
-        parágrafos_contatos.append(Paragraph(c, e_cont))
-
-    tabela_cabecalho = Table([
-        [coluna_esquerda_conteudo, parágrafos_contatos]
-    ], colWidths=[ancho_esq, ancho_dir])
-    
-    tabela_cabecalho.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'RIGHT'),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-    ]))
-
-    story.append(tabela_cabecalho)
-
-    def add_secao_pdf(titulo):
-        story.append(HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=4))
-        story.append(Paragraph(f"<b>{titulo}</b>", estilo_titulo_secao))
-
-    if perfil_txt:
-        add_secao_pdf("Perfil Profissional")
-        paragrafos_perfil = [p.strip() for p in perfil_txt.split('\n') if p.strip()]
-        for p_paragrafo in paragrafos_perfil:
-            story.append(Paragraph(p_paragrafo, estilo_perfil_texto))
-
-    if formacao_txt:
-        add_secao_pdf("Formação Acadêmica")
-        story.append(Paragraph(formacao_txt.replace('\n', '<br/>'), estilo_texto))
-
-    if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
-        add_secao_pdf("Cursos e Certificações")
-        story.append(Paragraph(cursos_txt.replace('\n', '<br/>'), estilo_texto))
-
-    if idiomas_txt and "[IDIOMAS]" not in idiomas_txt and "não constante" not in idiomas_txt.lower():
-        add_secao_pdf("Idiomas")
-        story.append(Paragraph(idiomas_txt.replace('\n', '<br/>'), estilo_texto))
-
-    if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt and "não constante" not in projetos_txt.lower():
-        add_secao_pdf("Projetos e Resultados")
-        for pr_line in projetos_txt.split('\n'):
-            if pr_line.strip():
-                item_limpo_pr = pr_line.lstrip('-•* ').strip()
-                story.append(Paragraph(f"• {item_limpo_pr}", estilo_texto))
-
-    if habilidades_txt:
-        add_secao_pdf("Habilidades e Competências")
-        hab_formatadas = habilidades_txt.replace('-', '•').replace('\n', '<br/>')
-        story.append(Paragraph(hab_formatadas, estilo_texto))
-
-    if experiencia_txt:
-        add_secao_pdf("Experiência Profissional")
-        
-        blocos_exp = experiencia_txt.split("\n\n")
-        for bloco in blocos_exp:
-            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
-            if not linhas_bloco:
-                continue
-            
-            empresa_periodo = linhas_bloco[0]
-            
-            if "|" in empresa_periodo:
-                partes_emp = empresa_periodo.split("|")
-                nome_emp = partes_emp[0].strip()
-                resto_emp = partes_emp[1].strip()
-                empresa_formatada = f"<b><i>{nome_emp}</i></b> | {resto_emp}"
-            else:
-                empresa_formatada = f"<b><i>{empresa_periodo}</i></b>"
-                
-            story.append(Paragraph(empresa_formatada, estilo_exp_empresa))
-            
-            if len(linhas_bloco) > 1:
-                cargo_linha = linhas_bloco[1]
-                story.append(Paragraph(f"{cargo_linha}", estilo_exp_cargo))
-            
-            for item in linhas_bloco[2:]:
-                item_limpo = item.lstrip('-•* ').strip()
-                story.append(Paragraph(f"• {item_limpo}", estilo_texto))
-            
-            story.append(Spacer(1, 0.5))
-
-    if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt and "não constante" not in voluntariado_txt.lower():
-        add_secao_pdf("Trabalho Voluntário")
-        story.append(Paragraph(voluntariado_txt.replace('\n', '<br/>'), estilo_texto))
-
-    pdf_doc.build(story)
-    buffer_pdf.seek(0)
-
-    if os.path.exists("temp_foto.png"):
-        os.remove("temp_foto.png")
-
-    col_d1, col_d2 = st.columns(2)
-    with col_d1:
-        st.download_button(
-            label=f"📥 Baixar em Word ({modelo_escolhido})",
-            data=buffer_word,
-            file_name="curriculo_otimizado.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            type="primary",
-            use_container_width=True
-        )
-    with col_d2:
-        st.download_button(
-            label=f"📥 Baixar em PDF ({modelo_escolhido})",
-            data=buffer_pdf,
-            file_name="curriculo_otimizado.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True
-        )
