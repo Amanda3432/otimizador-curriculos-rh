@@ -218,7 +218,7 @@ if gerar_btn:
                 Você é um consultor especialista em RH e sistemas ATS da Sala de Emprego. OTIMIZE e SINTETIZE o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga descrita.
                 
                 RESTRIÇÃO RIGOROSA DE TAMANHO (MÁXIMO 2 PÁGINAS): 
-                O texto gerado DEVE ser extremamente conciso, direto e enxuto para que caiba rigidamente em NO MÁXIMO 2 páginas. Selecione apenas as 4 experiências profissionais mais importantes e mantenha no máximo 3 marcadores (bullet points) por cargo.
+                O texto gerado DEVE ser conciso, direto e enxuto para que caiba rigidamente em NO MÁXIMO 2 páginas. Selecione as experiências profissionais mais importantes e mantenha no máximo 3 marcadores (bullet points) por cargo.
 
                 REGRAS RÍGIDAS DE SEPARAÇÃO DE TÓPICOS (EVITAR DUPLICAÇÃO):
                 1. [PERFIL PROFISSIONAL]: Deve conter apenas o resumo da trajetória e expertises gerais. NUNCA coloque lista de projetos, softwares específicos ou certificações aqui.
@@ -322,7 +322,7 @@ if "curriculo_gerado" in st.session_state:
         else:
             linhas_contato.append(line)
 
-    # --- GERAÇÃO DE WORD (.DOCX) ---
+    # --- GERAÇÃO DE WORD (.DOCX) COM FONTE 11PT ---
     doc = docx.Document()
     for section in doc.sections:
         section.top_margin = Inches(0.5)
@@ -330,7 +330,7 @@ if "curriculo_gerado" in st.session_state:
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)
 
-    def add_p_word(document, text="", bold_prefix="", space_after=1.5, font_size=10.5, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
+    def add_p_word(document, text="", bold_prefix="", space_after=1.5, font_size=11, is_bold=False, is_italic=False, align=WD_ALIGN_PARAGRAPH.LEFT):
         p = document.add_paragraph()
         p.alignment = align
         p.paragraph_format.space_before = Pt(0)
@@ -369,7 +369,7 @@ if "curriculo_gerado" in st.session_state:
 
         r_tit = p_sec.add_run(titulo)
         r_tit.font.name = 'Times New Roman'
-        r_tit.font.size = Pt(11.5)
+        r_tit.font.size = Pt(12)
         r_tit.font.bold = True
         r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -397,7 +397,7 @@ if "curriculo_gerado" in st.session_state:
         p_esq_nome.paragraph_format.space_after = Pt(1)
         r_nome = p_esq_nome.add_run(nome_txt)
         r_nome.font.name = 'Times New Roman'
-        r_nome.font.size = Pt(14)
+        r_nome.font.size = Pt(15)
         r_nome.font.bold = True
         r_nome.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -405,7 +405,7 @@ if "curriculo_gerado" in st.session_state:
         p_esq_cargo.paragraph_format.space_after = Pt(0)
         r_cargo = p_esq_cargo.add_run(cargo_txt)
         r_cargo.font.name = 'Times New Roman'
-        r_cargo.font.size = Pt(9.5)
+        r_cargo.font.size = Pt(10.5)
         r_cargo.font.italic = True
         r_cargo.font.color.rgb = RGBColor(0, 0, 0)
     else:
@@ -416,7 +416,7 @@ if "curriculo_gerado" in st.session_state:
         p_esq_nome.paragraph_format.space_after = Pt(1)
         r_nome = p_esq_nome.add_run(nome_txt)
         r_nome.font.name = 'Times New Roman'
-        r_nome.font.size = Pt(14)
+        r_nome.font.size = Pt(15)
         r_nome.font.bold = True
         r_nome.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -424,7 +424,7 @@ if "curriculo_gerado" in st.session_state:
         p_esq_cargo.paragraph_format.space_after = Pt(0)
         r_cargo = p_esq_cargo.add_run(cargo_txt)
         r_cargo.font.name = 'Times New Roman'
-        r_cargo.font.size = Pt(9.5)
+        r_cargo.font.size = Pt(10.5)
         r_cargo.font.italic = True
         r_cargo.font.color.rgb = RGBColor(0, 0, 0)
 
@@ -434,7 +434,7 @@ if "curriculo_gerado" in st.session_state:
         p_dir.paragraph_format.space_after = Pt(1)
         r_c = p_dir.add_run(c_item)
         r_c.font.name = 'Times New Roman'
-        r_c.font.size = Pt(9) if len(c_item) > 35 else Pt(10)
+        r_c.font.size = Pt(10.5)
         r_c.font.color.rgb = RGBColor(0, 0, 0)
 
     tcPr = table_header.rows[0].cells[0]._tc.get_or_add_tcPr()
@@ -453,39 +453,39 @@ if "curriculo_gerado" in st.session_state:
         add_secao_com_linha_word(doc, "Perfil Profissional")
         for p_line in perfil_txt.split('\n'):
             if p_line.strip():
-                add_p_word(doc, text=p_line.strip(), font_size=10, space_after=1.5, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+                add_p_word(doc, text=p_line.strip(), font_size=11, space_after=1.5, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
     if formacao_txt:
         add_secao_com_linha_word(doc, "Formação Acadêmica")
         for f_line in formacao_txt.split('\n'):
             if f_line.strip():
-                add_p_word(doc, text=f_line.strip(), font_size=10, space_after=1.5)
+                add_p_word(doc, text=f_line.strip(), font_size=11, space_after=1.5)
 
     if cursos_txt and "[CURSOS E CERTIFICAÇÕES]" not in cursos_txt:
         add_secao_com_linha_word(doc, "Cursos e Certificações")
         for c_line in cursos_txt.split('\n'):
             if c_line.strip():
-                add_p_word(doc, text=c_line.strip(), font_size=10, space_after=1.5)
+                add_p_word(doc, text=c_line.strip(), font_size=11, space_after=1.5)
 
     if idiomas_txt and "[IDIOMAS]" not in idiomas_txt and "não constante" not in idiomas_txt.lower():
         add_secao_com_linha_word(doc, "Idiomas")
         for i_line in idiomas_txt.split('\n'):
             if i_line.strip():
-                add_p_word(doc, text=i_line.strip(), font_size=10, space_after=1.5)
+                add_p_word(doc, text=i_line.strip(), font_size=11, space_after=1.5)
 
     if projetos_txt and "[PROJETOS E RESULTADOS]" not in projetos_txt and "não constante" not in projetos_txt.lower():
         add_secao_com_linha_word(doc, "Projetos e Resultados")
         for pr_line in projetos_txt.split('\n'):
             if pr_line.strip():
                 item_limpo_pr = pr_line.lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo_pr}", font_size=10, space_after=1.5)
+                add_p_word(doc, text=f"• {item_limpo_pr}", font_size=11, space_after=1.5)
 
     if habilidades_txt:
         add_secao_com_linha_word(doc, "Habilidades e Competências")
         for h_line in habilidades_txt.split('\n'):
             if h_line.strip():
                 item_limpo = h_line.lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo}", font_size=10, space_after=1.5)
+                add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=1.5)
 
     if experiencia_txt:
         add_secao_com_linha_word(doc, "Experiência Profissional")
@@ -495,38 +495,38 @@ if "curriculo_gerado" in st.session_state:
             if not linhas_bloco:
                 continue
             empresa_periodo = linhas_bloco[0]
-            add_p_word(doc, text=empresa_periodo, font_size=10, space_after=1)
+            add_p_word(doc, text=empresa_periodo, font_size=11, space_after=1)
             if len(linhas_bloco) > 1:
-                add_p_word(doc, text=linhas_bloco[1], font_size=10, is_bold=True, space_after=1)
+                add_p_word(doc, text=linhas_bloco[1], font_size=11, is_bold=True, space_after=1)
             for item in linhas_bloco[2:]:
                 item_limpo = item.lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo}", font_size=10, space_after=1.5)
+                add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=1.5)
 
     if voluntariado_txt and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt and "não constante" not in voluntariado_txt.lower():
         add_secao_com_linha_word(doc, "Trabalho Voluntário")
         for v_line in voluntariado_txt.split('\n'):
             if v_line.strip():
-                add_p_word(doc, text=v_line.strip(), font_size=10, space_after=1.5)
+                add_p_word(doc, text=v_line.strip(), font_size=11, space_after=1.5)
 
     buffer_word = io.BytesIO()
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO COM FONTE 11PT ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
 
-    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=14, leading=16, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
-    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=9.5, leading=11, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
+    estilo_nome = ParagraphStyle('NomeEstilo', parent=styles['Heading1'], fontSize=15, leading=17, textColor=cor_total, fontName="Times-Bold", spaceAfter=2)
+    estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
     
-    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11, leading=13, textColor=cor_total, spaceBefore=3, spaceAfter=2, fontName="Times-Bold")
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
-    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10, leading=12.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10, leading=12, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5)
+    estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=12, leading=14, textColor=cor_total, spaceBefore=4, spaceAfter=2, fontName="Times-Bold")
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=13.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=11, leading=13.5, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.5, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5)
 
     story = []
 
@@ -546,8 +546,7 @@ if "curriculo_gerado" in st.session_state:
 
     parágrafos_contatos = []
     for c in linhas_contato:
-        f_sz = 9 if len(c) > 35 else 9.5
-        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=f_sz, leading=f_sz+1.5, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
+        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
         parágrafos_contatos.append(Paragraph(c, e_cont))
 
     tabela_cabecalho = Table([
