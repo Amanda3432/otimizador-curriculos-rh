@@ -15,9 +15,6 @@ import io
 import os
 import re
 import pypdf
-import shutil
-import subprocess
-import tempfile
 import urllib.request
 import urllib.parse
 from html.parser import HTMLParser
@@ -93,3 +90,7 @@ def extrair_texto_de_url(url):
             return texto_cru[:6000]
     except Exception as e:
         return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
+
+# --- BARRA LATERAL (MODELOS E FOTO) ---
+st.sidebar.markdown("### 📋 Modelos Disponíveis")
+modelo_escolhido = st.sidebar.radio(
