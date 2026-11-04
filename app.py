@@ -237,16 +237,17 @@ if gerar_btn:
                 Você é um consultor especialista em RH e sistemas ATS da Sala de Emprego. OTIMIZE e SINTETIZE o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga descrita.
                 
                 RESTRIÇÃO ABSOLUTA E INEGOCIÁVEL DE TAMANHO (EXATAMENTE NO MÁXIMO 2 PÁGINAS): 
-                O texto gerado DEVE ser extremamente conciso, direto e enxuto para caber perfeitamente em no máximo 2 páginas impressas. 
-                - Selecione no máximo 4 experiências profissionais mais recentes e importantes (omita as mais antigas se o histórico for longo).
+                O texto gerado DEVE caber perfeitamente em no máximo 2 páginas impressas. 
+                - SE O CURRÍCULO FOR EXTENSO: Selecione e inclua rigorosamente até as **5 experiências profissionais mais atuais**, ajustando a descrição das atividades para que caibam perfeitamente no limite de 2 páginas. Se o histórico for curto e couber tudo, inclua todas as experiências.
                 - Mantenha no máximo 3 marcadores (bullet points) por cargo.
-                - Seja direto na descrição das atividades para evitar expansão desnecessária.
 
                 REGRAS RÍGIDAS DE FORMATAÇÃO E CONTEÚDO:
-                1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos curtos e objetivos. PROIBIDO o uso de palavras genéricas ou clichês como "sólida atuação", "ampla experiência" ou "ampla trajetória". Descreva as competências corporativas de forma direta.
+                1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos curtos e objetivos.
+                   - REGRA DE TEMPO DE EXPERIÊNCIA: Se o profissional tiver mais de 4 anos de experiência na área, inicie obrigatoriamente o primeiro parágrafo declarando a quantidade exata de anos (Ex: "Profissional com mais de X anos de trajetória na área de..."). Se tiver 4 anos ou menos, inicie informando diretamente a atuação sem citar números exatos.
+                   - PROIBIDO o uso de palavras genéricas ou clichês como "sólida atuação", "ampla experiência" ou "ampla trajetória".
                 2. [FORMAÇÃO ACADÊMICA]: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações (escreva de forma limpa, ex: MBA em Gestão de Pessoas).
                 3. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo até 3 realizações de impacto em tópicos com hífen (-).
-                4. [EXPERIÊNCIA PROFISSIONAL]: Descreva as atividades rotineiras sem duplicar o conteúdo de Projetos e Resultados.
+                4. [EXPERIÊNCIA PROFISSIONAL]: Liste até as 5 experiências mais recentes (se o histórico for longo) e descreva as atividades rotineiras sem duplicar o conteúdo de Projetos e Resultados.
 
                 Preencha as tags em maiúsculas (omita tags se a seção não existir no original):
 
@@ -264,7 +265,7 @@ if gerar_btn:
                 (CNH, CREA ou CRT se houver)
 
                 [PERFIL PROFISSIONAL]
-                [Parágrafo 1 curto focado em trajetória e atuação geral]
+                [Parágrafo 1 com o tempo exato de anos se > 4 anos, focado em trajetória]
                 [Parágrafo 2 curto focado em liderança e gestão de processos/obras]
                 [Parágrafo 3 curto focado em metodologias, metas e conformidade]
 
@@ -530,7 +531,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO COM FONTE 11PT ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO COM ALINHAMENTO CORRIGIDO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     styles = getSampleStyleSheet()
@@ -571,6 +572,7 @@ if "curriculo_gerado" in st.session_state:
         [coluna_esquerda_conteudo, parágrafos_contatos]
     ], colWidths=[ancho_esq, ancho_dir])
     
+    # CORREÇÃO DEFINITIVA DO ALINHAMENTO ESQUERDO (ZERANDO PADDING PARA BATER COM AS SEÇÕES)
     tabela_cabecalho.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (0,0), (0,0), 'LEFT'),
@@ -615,15 +617,16 @@ if "curriculo_gerado" in st.session_state:
                 story.append(Paragraph(f"• {texto_para_pdf(item_limpo_pr)}", estilo_texto))
 
     if secao_tem_conteudo(habilidades_txt):
-        elementos_habilidades = [Paragraph(f"• {texto_para_pdf(h.lstrip('-•* ').strip())}", estilo_texto) for h in habilidades_txt.split('\n') if h.strip()]
-        if elementos_habilidades:
-            add_secao_pdf("Habilidades e Competências", elementos_habilidades[0])
-            story.extend(elementos_habilidades[1:])
+        add_secao_pdf("Habilidades e Competências")
+        for h_line in habilidades_txt.split('\n'):
+            if h_line.strip():
+                item_limpo = h_line.lstrip('-•* ').strip()
+                story.append(Paragraph(f"• {texto_para_pdf(item_limpo)}", estilo_texto))
 
     if secao_tem_conteudo(experiencia_txt):
         add_secao_pdf("Experiência Profissional")
         blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
-        for indice_bloco, bloco in enumerate(blocos_exp):
+        for bloco in blocos_exp:
             linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
             if not linhas_bloco:
                 continue
@@ -640,17 +643,10 @@ if "curriculo_gerado" in st.session_state:
             elementos_cargo = [Paragraph(empresa_formatada, estilo_exp_empresa)]
             if len(linhas_bloco) > 1:
                 elementos_cargo.append(Paragraph(texto_para_pdf(linhas_bloco[1]), estilo_exp_cargo))
-            if len(linhas_bloco) > 2:
-                primeiro_item = linhas_bloco[2].lstrip("-•* ").strip()
-                elementos_cargo.append(Paragraph(texto_para_pdf(f"• {primeiro_item}"), estilo_texto))
 
-            bloco_mantido = KeepTogether(elementos_cargo)
-            if indice_bloco == 0:
-                story.append(bloco_mantido)
-            else:
-                story.append(bloco_mantido)
+            story.append(KeepTogether(elementos_cargo))
 
-            for item in linhas_bloco[3:]:
+            for item in linhas_bloco[2:]:
                 item_limpo = item.lstrip("-•* ").strip()
                 story.append(Paragraph(texto_para_pdf(f"• {item_limpo}"), estilo_texto))
             story.append(Spacer(1, 0.5))
@@ -694,7 +690,7 @@ if "curriculo_gerado" in st.session_state:
         st.error(
             f"O currículo ultrapassou o limite de 2 páginas "
             f"(PDF: {paginas_pdf} página(s); Word: {paginas_word if paginas_word is not None else 'não validado'}). "
-            "A ferramenta sintetizou automaticamente, mas o conteúdo excedeu o espaço. Gere novamente para que a IA enxugue mais as descrições."
+            "A ferramenta tentará otimizar novamente para ajustar ao limite rígido de 2 páginas."
         )
         st.stop()
     else:
