@@ -531,9 +531,8 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO COM ALINHAMENTO ESQUERDO CORRIGIDO (0 MARGIN) ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO COM FOTO CORRIGIDA E ALINHADA ---
     buffer_pdf = io.BytesIO()
-    # Margens laterais ajustadas para 25 (aprox 8.8mm) para alinhar perfeitamente com a borda da tabela e linhas
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=30, bottomMargin=30)
     styles = getSampleStyleSheet()
     
@@ -550,39 +549,65 @@ if "curriculo_gerado" in st.session_state:
 
     story = []
 
+    # TRATAMENTO CORRETO DA TABELA DE CABEÇALHO COM FOTO OU SEM FOTO
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
-        img = RLImage(temp_foto_path, width=44, height=44)
         
-        coluna_esquerda_conteudo = [img, Paragraph(f"<b>{texto_para_pdf(nome_txt)}</b>", estilo_nome), Paragraph(texto_para_pdf(cargo_txt), estilo_cargo)]
-        ancho_esq = 55
-        ancho_dir = 504
+        # Foto em miniatura proporcional (ex: largura 50, altura 60 pontos)
+        img = RLImage(temp_foto_path, width=50, height=62)
+        
+        # Estrutura em 3 colunas para o modelo com foto: [Foto] | [Nome e Cargo] | [Contatos]
+        coluna_foto = [img]
+        coluna_info = [
+            Paragraph(f"<b>{texto_para_pdf(nome_txt)}</b>", estilo_nome), 
+            Paragraph(texto_para_pdf(cargo_txt), estilo_cargo)
+        ]
+        
+        parágrafos_contatos = []
+        for c in linhas_contato:
+            e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
+            parágrafos_contatos.append(Paragraph(texto_para_pdf(c), e_cont))
+
+        tabela_cabecalho = Table([
+            [coluna_foto, coluna_info, parágrafos_contatos]
+        ], colWidths=[65, 235, 199])
+        
+        tabela_cabecalho.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,0), 'LEFT'),
+            ('ALIGN', (2,0), (2,0), 'RIGHT'),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('LEFTPADDING', (0,0), (0,0), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ]))
     else:
-        coluna_esquerda_conteudo = [Paragraph(f"<b>{texto_para_pdf(nome_txt)}</b>", estilo_nome), Paragraph(texto_para_pdf(cargo_txt), estilo_cargo)]
-        ancho_esq = 265
-        ancho_dir = 294
+        coluna_esquerda_conteudo = [
+            Paragraph(f"<b>{texto_para_pdf(nome_txt)}</b>", estilo_nome), 
+            Paragraph(texto_para_pdf(cargo_txt), estilo_cargo)
+        ]
+        
+        parágrafos_contatos = []
+        for c in linhas_contato:
+            e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
+            parágrafos_contatos.append(Paragraph(texto_para_pdf(c), e_cont))
 
-    parágrafos_contatos = []
-    for c in linhas_contato:
-        e_cont = ParagraphStyle('ContatoDirEstiloPDF', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Roman", alignment=2, spaceAfter=0.5)
-        parágrafos_contatos.append(Paragraph(texto_para_pdf(c), e_cont))
-
-    tabela_cabecalho = Table([
-        [coluna_esquerda_conteudo, parágrafos_contatos]
-    ], colWidths=[ancho_esq, ancho_dir])
-    
-    # ALINHAMENTO RIGOROSO: LEFTPADDING ZERADO PARA COLAR EXATAMENTE NA MARGEM ESQUERDA
-    tabela_cabecalho.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('ALIGN', (0,0), (0,0), 'LEFT'),
-        ('ALIGN', (1,0), (1,0), 'RIGHT'),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-        ('LEFTPADDING', (0,0), (0,0), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-    ]))
+        tabela_cabecalho = Table([
+            [coluna_esquerda_conteudo, parágrafos_contatos]
+        ], colWidths=[265, 234])
+        
+        tabela_cabecalho.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,0), 'RIGHT'),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('LEFTPADDING', (0,0), (0,0), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ]))
 
     story.append(tabela_cabecalho)
 
