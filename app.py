@@ -64,7 +64,6 @@ def sanitizar_texto_entrada(texto):
 def texto_para_pdf(texto):
     if not texto:
         return ""
-    # Limpa formatações indesejadas de curso técnico e parênteses em MBAs no texto gerado
     texto_formatado = re.sub(r'Curso\s+Técnico', 'Técnico', texto, flags=re.IGNORECASE)
     texto_formatado = re.sub(r'\((MBA)\)', r'\1', texto_formatado)
     return escape(str(texto_formatado))
@@ -237,13 +236,16 @@ if gerar_btn:
                 
                 Você é um consultor especialista em RH e sistemas ATS da Sala de Emprego. OTIMIZE e SINTETIZE o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga descrita.
                 
-                RESTRIÇÃO RIGOROSA DE TAMANHO (MÁXIMO 2 PÁGINAS): 
-                O texto gerado DEVE ser conciso, direto e enxuto para que caiba rigidamente em NO MÁXIMO 2 páginas. Selecione as experiências profissionais mais importantes e mantenha no máximo 3 marcadores (bullet points) por cargo.
+                RESTRIÇÃO ABSOLUTA E INEGOCIÁVEL DE TAMANHO (EXATAMENTE NO MÁXIMO 2 PÁGINAS): 
+                O texto gerado DEVE ser extremamente conciso, direto e enxuto para caber perfeitamente em no máximo 2 páginas impressas. 
+                - Selecione no máximo 4 experiências profissionais mais recentes e importantes (omita as mais antigas se o histórico for longo).
+                - Mantenha no máximo 3 marcadores (bullet points) por cargo.
+                - Seja direto na descrição das atividades para evitar expansão desnecessária.
 
                 REGRAS RÍGIDAS DE FORMATAÇÃO E CONTEÚDO:
-                1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos distintos. PROIBIDO o uso de palavras genéricas ou clichês como "sólida atuação", "ampla experiência" ou "ampla trajetória". Descreva as competências de forma objetiva, direta e corporativa.
+                1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos curtos e objetivos. PROIBIDO o uso de palavras genéricas ou clichês como "sólida atuação", "ampla experiência" ou "ampla trajetória". Descreva as competências corporativas de forma direta.
                 2. [FORMAÇÃO ACADÊMICA]: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações (escreva de forma limpa, ex: MBA em Gestão de Pessoas).
-                3. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo realizações de impacto em tópicos com hífen (-).
+                3. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo até 3 realizações de impacto em tópicos com hífen (-).
                 4. [EXPERIÊNCIA PROFISSIONAL]: Descreva as atividades rotineiras sem duplicar o conteúdo de Projetos e Resultados.
 
                 Preencha as tags em maiúsculas (omita tags se a seção não existir no original):
@@ -262,9 +264,9 @@ if gerar_btn:
                 (CNH, CREA ou CRT se houver)
 
                 [PERFIL PROFISSIONAL]
-                [Parágrafo 1 focado em trajetória e atuação geral]
-                [Parágrafo 2 focado em liderança e gestão de processos/obras]
-                [Parágrafo 3 focado em metodologias, metas e conformidade]
+                [Parágrafo 1 curto focado em trajetória e atuação geral]
+                [Parágrafo 2 curto focado em liderança e gestão de processos/obras]
+                [Parágrafo 3 curto focado em metodologias, metas e conformidade]
 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano]
@@ -358,7 +360,6 @@ if "curriculo_gerado" in st.session_state:
             run_b.font.color.rgb = RGBColor(0, 0, 0)
 
         if text:
-            # Limpeza preventiva no word
             texto_limpo_w = re.sub(r'Curso\s+Técnico', 'Técnico', text, flags=re.IGNORECASE)
             texto_limpo_w = re.sub(r'\((MBA)\)', r'\1', texto_limpo_w)
             run = p.add_run(texto_limpo_w)
@@ -620,6 +621,7 @@ if "curriculo_gerado" in st.session_state:
             story.extend(elementos_habilidades[1:])
 
     if secao_tem_conteudo(experiencia_txt):
+        add_secao_pdf("Experiência Profissional")
         blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
         for indice_bloco, bloco in enumerate(blocos_exp):
             linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
@@ -644,7 +646,7 @@ if "curriculo_gerado" in st.session_state:
 
             bloco_mantido = KeepTogether(elementos_cargo)
             if indice_bloco == 0:
-                add_secao_pdf("Experiência Profissional", bloco_mantido)
+                story.append(bloco_mantido)
             else:
                 story.append(bloco_mantido)
 
@@ -660,7 +662,7 @@ if "curriculo_gerado" in st.session_state:
     pdf_doc.build(story)
     buffer_pdf.seek(0)
 
-    # Validação segura e rápida de páginas
+    # Validação segura de páginas
     paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
     buffer_pdf.seek(0)
 
@@ -692,11 +694,11 @@ if "curriculo_gerado" in st.session_state:
         st.error(
             f"O currículo ultrapassou o limite de 2 páginas "
             f"(PDF: {paginas_pdf} página(s); Word: {paginas_word if paginas_word is not None else 'não validado'}). "
-            "Reduza informações secundárias e gere novamente."
+            "A ferramenta sintetizou automaticamente, mas o conteúdo excedeu o espaço. Gere novamente para que a IA enxugue mais as descrições."
         )
         st.stop()
     else:
-        st.success(f"Paginação validada com sucesso! PDF com {paginas_pdf} página(s).")
+        st.success(f"Paginação validada com sucesso! Currículo ajustado com perfeição em {paginas_pdf} página(s).")
 
     # --- BOTÕES DE DOWNLOAD ---
     col_d1, col_d2 = st.columns(2)
