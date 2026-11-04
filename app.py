@@ -64,7 +64,10 @@ def sanitizar_texto_entrada(texto):
 def texto_para_pdf(texto):
     if not texto:
         return ""
-    return escape(str(texto))
+    # Limpa formatações indesejadas de curso técnico e parênteses em MBAs no texto gerado
+    texto_formatado = re.sub(r'Curso\s+Técnico', 'Técnico', texto, flags=re.IGNORECASE)
+    texto_formatado = re.sub(r'\((MBA)\)', r'\1', texto_formatado)
+    return escape(str(texto_formatado))
 
 def secao_tem_conteudo(texto):
     if not texto:
@@ -237,10 +240,11 @@ if gerar_btn:
                 RESTRIÇÃO RIGOROSA DE TAMANHO (MÁXIMO 2 PÁGINAS): 
                 O texto gerado DEVE ser conciso, direto e enxuto para que caiba rigidamente em NO MÁXIMO 2 páginas. Selecione as experiências profissionais mais importantes e mantenha no máximo 3 marcadores (bullet points) por cargo.
 
-                REGRAS RÍGIDAS DE SEPARAÇÃO DE TÓPICOS (EVITAR DUPLICAÇÃO):
-                1. [PERFIL PROFISSIONAL]: Deve conter apenas o resumo da trajetória e expertises gerais. NUNCA coloque lista de projetos, softwares específicos ou certificações aqui.
-                2. [PROJETOS E RESULTADOS]: Deve ser uma seção INDEPENDENTE e ISOLADA, contendo apenas realizações de impacto em formato de tópicos com hífen (-). NUNCA repita esses projetos dentro da descrição das empresas na Experiência Profissional.
-                3. [EXPERIÊNCIA PROFISSIONAL]: Descreva as atividades e conquistas rotineiras de cada cargo, sem duplicar o que já foi resumido em Projetos e Resultados.
+                REGRAS RÍGIDAS DE FORMATAÇÃO E CONTEÚDO:
+                1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos distintos. PROIBIDO o uso de palavras genéricas ou clichês como "sólida atuação", "ampla experiência" ou "ampla trajetória". Descreva as competências de forma objetiva, direta e corporativa.
+                2. [FORMAÇÃO ACADÊMICA]: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações (escreva de forma limpa, ex: MBA em Gestão de Pessoas).
+                3. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo realizações de impacto em tópicos com hífen (-).
+                4. [EXPERIÊNCIA PROFISSIONAL]: Descreva as atividades rotineiras sem duplicar o conteúdo de Projetos e Resultados.
 
                 Preencha as tags em maiúsculas (omita tags se a seção não existir no original):
 
@@ -258,7 +262,9 @@ if gerar_btn:
                 (CNH, CREA ou CRT se houver)
 
                 [PERFIL PROFISSIONAL]
-                [Parágrafo de trajetória e expertises]
+                [Parágrafo 1 focado em trajetória e atuação geral]
+                [Parágrafo 2 focado em liderança e gestão de processos/obras]
+                [Parágrafo 3 focado em metodologias, metas e conformidade]
 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano]
@@ -352,7 +358,10 @@ if "curriculo_gerado" in st.session_state:
             run_b.font.color.rgb = RGBColor(0, 0, 0)
 
         if text:
-            run = p.add_run(text)
+            # Limpeza preventiva no word
+            texto_limpo_w = re.sub(r'Curso\s+Técnico', 'Técnico', text, flags=re.IGNORECASE)
+            texto_limpo_w = re.sub(r'\((MBA)\)', r'\1', texto_limpo_w)
+            run = p.add_run(texto_limpo_w)
             run.font.name = 'Times New Roman'
             run.font.size = Pt(font_size)
             run.font.bold = is_bold
@@ -651,7 +660,7 @@ if "curriculo_gerado" in st.session_state:
     pdf_doc.build(story)
     buffer_pdf.seek(0)
 
-    # Validação segura e rápida de páginas (com proteção contra travamentos)
+    # Validação segura e rápida de páginas
     paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
     buffer_pdf.seek(0)
 
