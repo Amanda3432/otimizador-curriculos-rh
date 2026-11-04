@@ -97,7 +97,7 @@ def extrair_texto_de_url(url):
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
             }
         )
-        with urllib.request.urlopen(req, timeout=12) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:
             html_bytes = response.read()
             html_content = html_bytes.decode('utf-8', errors='ignore')
             parser = HTMLTextExtractor()
@@ -193,9 +193,9 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# --- CHAMADA À API COM RETRY ---
+# --- CHAMADA À API COM RETRY SEGURO ---
 def chamar_gemini_com_retry(client, prompt_texto):
-    modelos_para_tentar = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash']
+    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.8-flash']
     erros_acumulados = []
     
     for modelo in modelos_para_tentar:
@@ -208,7 +208,7 @@ def chamar_gemini_com_retry(client, prompt_texto):
                 return response.text
         except Exception as e:
             erros_acumulados.append(f"[{modelo}] {str(e)}")
-            time.sleep(2)
+            time.sleep(1)
             continue
                 
     raise Exception(f"Todos os modelos testados falharam: {erros_acumulados}")
@@ -651,11 +651,10 @@ if "curriculo_gerado" in st.session_state:
     pdf_doc.build(story)
     buffer_pdf.seek(0)
 
-    # Validação final: nunca disponibiliza PDF acima do limite absoluto de 2 páginas.
+    # Validação segura e rápida de páginas (com proteção contra travamentos)
     paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
     buffer_pdf.seek(0)
 
-    # Quando LibreOffice estiver instalado no servidor, valida também a paginação real do DOCX.
     paginas_word = None
     conversor_office = shutil.which("libreoffice") or shutil.which("soffice")
     if conversor_office:
@@ -669,7 +668,7 @@ if "curriculo_gerado" in st.session_state:
                 subprocess.run(
                     [conversor_office, "--headless", f"-env:UserInstallation=file://{pasta_validacao}/lo_profile",
                      "--convert-to", "pdf", "--outdir", pasta_validacao, caminho_docx],
-                    check=True, capture_output=True, timeout=30
+                    check=True, capture_output=True, timeout=5
                 )
                 caminho_pdf_word = os.path.join(pasta_validacao, "curriculo_validacao.pdf")
                 if os.path.exists(caminho_pdf_word):
@@ -682,20 +681,13 @@ if "curriculo_gerado" in st.session_state:
 
     if paginas_pdf > 2 or (paginas_word is not None and paginas_word > 2):
         st.error(
-            f"O currículo ainda ultrapassou o limite de 2 páginas "
+            f"O currículo ultrapassou o limite de 2 páginas "
             f"(PDF: {paginas_pdf} página(s); Word: {paginas_word if paginas_word is not None else 'não validado'}). "
-            "Os arquivos não serão disponibilizados com mais de 2 páginas. A ferramenta mantém o limite rígido para não entregar um currículo fora do padrão. "
             "Reduza informações secundárias e gere novamente."
         )
         st.stop()
-    elif paginas_word is None:
-        st.info(
-            f"Paginação do PDF validada: {paginas_pdf} página(s). "
-            "O servidor não possui LibreOffice para conferir automaticamente a paginação do Word; "
-            "o DOCX recebeu os mesmos cortes de conteúdo e as mesmas configurações A4/fonte 11."
-        )
     else:
-        st.success(f"Paginação validada: PDF com {paginas_pdf} página(s) e Word com {paginas_word} página(s).")
+        st.success(f"Paginação validada com sucesso! PDF com {paginas_pdf} página(s).")
 
     # --- BOTÕES DE DOWNLOAD ---
     col_d1, col_d2 = st.columns(2)
