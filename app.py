@@ -531,9 +531,10 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO COM ALINHAMENTO CORRIGIDO ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO COM ALINHAMENTO ESQUERDO CORRIGIDO (0 MARGIN) ---
     buffer_pdf = io.BytesIO()
-    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    # Margens laterais ajustadas para 25 (aprox 8.8mm) para alinhar perfeitamente com a borda da tabela e linhas
+    pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=30, bottomMargin=30)
     styles = getSampleStyleSheet()
     
     cor_total = colors.HexColor("#000000")
@@ -557,11 +558,11 @@ if "curriculo_gerado" in st.session_state:
         
         coluna_esquerda_conteudo = [img, Paragraph(f"<b>{texto_para_pdf(nome_txt)}</b>", estilo_nome), Paragraph(texto_para_pdf(cargo_txt), estilo_cargo)]
         ancho_esq = 55
-        ancho_dir = 495
+        ancho_dir = 504
     else:
         coluna_esquerda_conteudo = [Paragraph(f"<b>{texto_para_pdf(nome_txt)}</b>", estilo_nome), Paragraph(texto_para_pdf(cargo_txt), estilo_cargo)]
-        ancho_esq = 260
-        ancho_dir = 290
+        ancho_esq = 265
+        ancho_dir = 294
 
     parágrafos_contatos = []
     for c in linhas_contato:
@@ -572,14 +573,14 @@ if "curriculo_gerado" in st.session_state:
         [coluna_esquerda_conteudo, parágrafos_contatos]
     ], colWidths=[ancho_esq, ancho_dir])
     
-    # CORREÇÃO DEFINITIVA DO ALINHAMENTO ESQUERDO (ZERANDO PADDING PARA BATER COM AS SEÇÕES)
+    # ALINHAMENTO RIGOROSO: LEFTPADDING ZERADO PARA COLAR EXATAMENTE NA MARGEM ESQUERDA
     tabela_cabecalho.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
         ('TOPPADDING', (0,0), (-1,-1), 0),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING', (0,0), (0,0), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
     ]))
 
