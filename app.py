@@ -193,9 +193,9 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# --- CHAMADA À API COM RETRY SEGURO ---
+# --- CHAMADA À API COM OS MODELOS 3.8, 3.7 E 3.6 ---
 def chamar_gemini_com_retry(client, prompt_texto):
-    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-3.8-flash']
+    modelos_para_tentar = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash']
     erros_acumulados = []
     
     for modelo in modelos_para_tentar:
@@ -208,7 +208,7 @@ def chamar_gemini_com_retry(client, prompt_texto):
                 return response.text
         except Exception as e:
             erros_acumulados.append(f"[{modelo}] {str(e)}")
-            time.sleep(1)
+            time.sleep(2)
             continue
                 
     raise Exception(f"Todos os modelos testados falharam: {erros_acumulados}")
