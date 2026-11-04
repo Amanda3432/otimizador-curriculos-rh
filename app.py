@@ -1,96 +1,109 @@
-import streamlit as st
-import docx
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable, KeepTogether
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from google import genai
-import time
-import io
-import os
-import re
-import pypdf
-import urllib.request
-import urllib.parse
-from html.parser import HTMLParser
-from xml.sax.saxutils import escape
+story.extend(elementos_habilidades[1:])
 
-st.set_page_config(
-    page_title="Sala de Emprego | Otimizador de Currículos", 
-    page_icon="💼", 
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+    if experiencia_txt:
+        blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
+        for indice_bloco, bloco in enumerate(blocos_exp):
+            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            if not linhas_bloco:
+                continue
 
-# --- CABEÇALHO PROFISSIONAL DA CONSULTORIA ---
-st.markdown("<h1 style='text-align: left; color: #111111; font-family: sans-serif; font-size: 2.2rem; margin-bottom: 0px;'>Sala de Emprego — Otimizador de Currículos</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: left; color: #555555; font-size: 1.1rem; margin-top: 5px; margin-bottom: 25px;'>Ferramenta de Otimização de Currículo para Triagens em ATS do Sala de Emprego</p>", unsafe_allow_html=True)
-st.markdown("---")
+            empresa_periodo = linhas_bloco[0]
+            if "|" in empresa_periodo:
+                partes_emp = empresa_periodo.split("|", 1)
+                nome_emp = texto_para_pdf(partes_emp[0].strip())
+                resto_emp = texto_para_pdf(partes_emp[1].strip())
+                empresa_formatada = f"<b><i>{nome_emp}</i></b> | {resto_emp}"
+            else:
+                empresa_formatada = f"<b><i>{texto_para_pdf(empresa_periodo)}</i></b>"
 
-# --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        ativa_api_key = st.secrets["GEMINI_API_KEY"]
-    else:
-        ativa_api_key = ""
-except Exception:
-    ativa_api_key = ""
+            elementos_cargo = [Paragraph(empresa_formatada, estilo_exp_empresa)]
+            if len(linhas_bloco) > 1:
+                elementos_cargo.append(Paragraph(texto_para_pdf(linhas_bloco[1]), estilo_exp_cargo))
+            if len(linhas_bloco) > 2:
+                primeiro_item = linhas_bloco[2].lstrip("-•* ").strip()
+                elementos_cargo.append(Paragraph(texto_para_pdf(f"• {primeiro_item}"), estilo_texto))
 
-# --- FUNÇÃO DE SEGURANÇA: SANITIZAÇÃO DE TEXTO CONTRA PROMPT INJECTION ---
-def sanitizar_texto_entrada(texto):
-    if not texto:
-        return ""
-    padroes_maliciosos = [
-        r"ignore previous instructions",
-        r"ignore as instruções anteriores",
-        r"system prompt",
-        r"revele a chave",
-        r"show api key",
-        r"developer mode"
-    ]
-    texto_limpo = texto
-    for padrao in padroes_maliciosos:
-        texto_limpo = re.sub(padrao, "[REDACTED_SECURITY]", texto_limpo, flags=re.IGNORECASE)
-    return texto_limpo
+            bloco_mantido = KeepTogether(elementos_cargo)
+            if indice_bloco == 0:
+                add_secao_pdf("Experiência Profissional", bloco_mantido)
+            else:
+                story.append(bloco_mantido)
 
-# --- FUNÇÃO PARA EXTRAIR TEXTO DE LINKS DE VAGAS ---
-class HTMLTextExtractor(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.text_accumulator = []
+            for item in linhas_bloco[3:]:
+                item_limpo = item.lstrip("-•* ").strip()
+                story.append(Paragraph(texto_para_pdf(f"• {item_limpo}"), estilo_texto))
+            story.append(Spacer(1, 0.5))
 
-    def handle_data(self, data):
-        text = data.strip()
-        if text:
-            self.text_accumulator.append(text)
+    if secao_tem_conteudo(voluntariado_txt) and "não constante" not in voluntariado_txt.lower():
+        add_secao_pdf("Trabalho Voluntário")
+        story.append(Paragraph(texto_para_pdf(voluntariado_txt).replace('\n', '<br/>'), estilo_texto))
 
-    def get_text(self):
-        return ' '.join(self.text_accumulator)
+    pdf_doc.build(story)
+    buffer_pdf.seek(0)
 
-def extrair_texto_de_url(url):
-    try:
-        req = urllib.request.Request(
-            url, 
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-            }
+    # Validação final: nunca disponibiliza PDF acima do limite absoluto de 2 páginas.
+    paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
+    buffer_pdf.seek(0)
+
+    # Quando LibreOffice estiver instalado no servidor, valida também a paginação real do DOCX.
+    paginas_word = None
+    conversor_office = shutil.which("libreoffice") or shutil.which("soffice")
+    if conversor_office:
+        try:
+            with tempfile.TemporaryDirectory() as pasta_validacao:
+                caminho_docx = os.path.join(pasta_validacao, "curriculo_validacao.docx")
+                with open(caminho_docx, "wb") as arquivo_temp:
+                    buffer_word.seek(0)
+                    arquivo_temp.write(buffer_word.read())
+                buffer_word.seek(0)
+                subprocess.run(
+                    [conversor_office, "--headless", f"-env:UserInstallation=file://{pasta_validacao}/lo_profile",
+                     "--convert-to", "pdf", "--outdir", pasta_validacao, caminho_docx],
+                    check=True, capture_output=True, timeout=30
+                )
+                caminho_pdf_word = os.path.join(pasta_validacao, "curriculo_validacao.pdf")
+                if os.path.exists(caminho_pdf_word):
+                    paginas_word = len(pypdf.PdfReader(caminho_pdf_word).pages)
+        except Exception:
+            paginas_word = None
+
+    if os.path.exists("temp_foto.png"):
+        os.remove("temp_foto.png")
+
+    if paginas_pdf > 2 or (paginas_word is not None and paginas_word > 2):
+        st.error(
+            f"O currículo ainda ultrapassou o limite de 2 páginas "
+            f"(PDF: {paginas_pdf} página(s); Word: {paginas_word if paginas_word is not None else 'não validado'}). "
+            "Os arquivos não serão disponibilizados com mais de 2 páginas. A ferramenta mantém o limite rígido para não entregar um currículo fora do padrão. "
+            "Reduza informações secundárias e gere novamente."
         )
-        with urllib.request.urlopen(req, timeout=12) as response:
-            html_bytes = response.read()
-            html_content = html_bytes.decode('utf-8', errors='ignore')
-            parser = HTMLTextExtractor()
-            parser.feed(html_content)
-            texto_cru = parser.get_text()
-            return texto_cru[:6000]
-    except Exception as e:
-        return f"[Aviso: Não foi possível realizar o scraping automático da URL ({e}). A IA usará as informações complementares informadas]."
+        st.stop()
+    elif paginas_word is None:
+        st.info(
+            f"Paginação do PDF validada: {paginas_pdf} página(s). "
+            "O servidor não possui LibreOffice para conferir automaticamente a paginação do Word; "
+            "o DOCX recebeu os mesmos cortes de conteúdo e as mesmas configurações A4/fonte 11."
+        )
+    else:
+        st.success(f"Paginação validada: PDF com {paginas_pdf} página(s) e Word com {paginas_word} página(s).")
 
-# --- BARRA LATERAL (MODELOS E FOTO) ---
-st.sidebar.markdown("### 📋 Modelos Disponíveis")
-modelo_escolhido = st.sidebar.radio(
+    # --- BOTÕES DE DOWNLOAD ---
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        st.download_button(
+            label=f"📥 Baixar em Word ({modelo_escolhido})",
+            data=buffer_word,
+            file_name="curriculo_otimizado.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            type="primary",
+            use_container_width=True
+        )
+    with col_d2:
+        st.download_button(
+            label=f"📥 Baixar em PDF ({modelo_escolhido})",
+            data=buffer_pdf,
+            file_name="curriculo_otimizado.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
