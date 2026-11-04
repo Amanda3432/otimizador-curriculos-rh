@@ -242,12 +242,15 @@ if gerar_btn:
                 - Mantenha no máximo 3 marcadores (bullet points) por cargo.
 
                 REGRAS RÍGIDAS DE FORMATAÇÃO E CONTEÚDO:
-                1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos curtos e objetivos.
-                   - REGRA DE TEMPO DE EXPERIÊNCIA: Se o profissional tiver mais de 4 anos de experiência na área, inicie obrigatoriamente o primeiro parágrafo declarando a quantidade exata de anos (Ex: "Profissional com mais de X anos de trajetória na área de..."). Se tiver 4 anos ou menos, inicie informando diretamente a atuação sem citar números exatos.
-                   - PROIBIDO o uso de palavras genéricas ou clichês como "sólida atuação", "ampla experiência" ou "ampla trajetória".
-                2. [FORMAÇÃO ACADÊMICA]: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações (escreva de forma limpa, ex: MBA em Gestão de Pessoas).
+                1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos curtos e objetivos seguindo a estrutura:
+                   - 1° parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando-se pela capacidade [competências comportamentais], garantindo que [benefício para a empresa].
+                   - 2° parágrafo: Expertises em [atividades-chave/palavras-chave mais recorrentes das vagas].
+                   - 3° parágrafo: Conhecimentos em [sistemas e conceitos teóricos].
+                   - REGRA DE TEMPO DE EXPERIÊNCIA: Se o profissional tiver mais de 4 anos de experiência na área, inicie obrigatoriamente o primeiro parágrafo declarando a quantidade exata de anos. Se tiver 4 anos ou menos, inicie informando diretamente a atuação sem citar números exatos.
+                   - PROIBIDO o uso de palavras genéricas ou clichês vazios ("sólida atuação", "ampla experiência").
+                2. [FORMAÇÃO ACADÊMICA]: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações. NUNCA inclua ensino médio se houver nível técnico ou superior. NÃO coloque carga horária nem a palavra "concluído".
                 3. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo até 3 realizações de impacto em tópicos com hífen (-).
-                4. [EXPERIÊNCIA PROFISSIONAL]: Liste até as 5 experiências mais recentes (se o histórico for longo) e descreva as atividades rotineiras sem duplicar o conteúdo de Projetos e Resultados.
+                4. [EXPERIÊNCIA PROFISSIONAL]: Liste até as 5 experiências mais recentes, em ordem cronológica da mais recente para a mais antiga. Omita experiências muito curtas que não sejam temporárias.
 
                 Preencha as tags em maiúsculas (omita tags se a seção não existir no original):
 
@@ -265,9 +268,9 @@ if gerar_btn:
                 (CNH, CREA ou CRT se houver)
 
                 [PERFIL PROFISSIONAL]
-                [Parágrafo 1 com o tempo exato de anos se > 4 anos, focado em trajetória]
-                [Parágrafo 2 curto focado em liderança e gestão de processos/obras]
-                [Parágrafo 3 curto focado em metodologias, metas e conformidade]
+                [Parágrafo 1 estruturado conforme diretriz]
+                [Parágrafo 2 estruturado conforme diretriz]
+                [Parágrafo 3 estruturado conforme diretriz]
 
                 [FORMAÇÃO ACADÊMICA]
                 [Curso real | Instituição real - Ano]
@@ -392,6 +395,7 @@ if "curriculo_gerado" in st.session_state:
         r_tit.font.bold = True
         r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
+    # Construção do cabeçalho Word conforme o modelo escolhido
     table_header = doc.add_table(rows=1, cols=2)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.autofit = False
@@ -531,7 +535,7 @@ if "curriculo_gerado" in st.session_state:
     doc.save(buffer_word)
     buffer_word.seek(0)
 
-    # --- GERAÇÃO DE PDF PERSONALIZADO COM FOTO CORRIGIDA E ALINHADA ---
+    # --- GERAÇÃO DE PDF PERSONALIZADO COM ALINHAMENTO RIGOROSO ---
     buffer_pdf = io.BytesIO()
     pdf_doc = SimpleDocTemplate(buffer_pdf, pagesize=A4, rightMargin=25, leftMargin=25, topMargin=30, bottomMargin=30)
     styles = getSampleStyleSheet()
@@ -549,16 +553,14 @@ if "curriculo_gerado" in st.session_state:
 
     story = []
 
-    # TRATAMENTO CORRETO DA TABELA DE CABEÇALHO COM FOTO OU SEM FOTO
+    # ESTRUTURA DE CABEÇALHO PARA PDF (COM OU SEM FOTO)
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
             f.write(foto_arquivo.getbuffer())
         
-        # Foto em miniatura proporcional (ex: largura 50, altura 60 pontos)
-        img = RLImage(temp_foto_path, width=50, height=62)
+        img = RLImage(temp_foto_path, width=48, height=60)
         
-        # Estrutura em 3 colunas para o modelo com foto: [Foto] | [Nome e Cargo] | [Contatos]
         coluna_foto = [img]
         coluna_info = [
             Paragraph(f"<b>{texto_para_pdf(nome_txt)}</b>", estilo_nome), 
@@ -572,7 +574,7 @@ if "curriculo_gerado" in st.session_state:
 
         tabela_cabecalho = Table([
             [coluna_foto, coluna_info, parágrafos_contatos]
-        ], colWidths=[65, 235, 199])
+        ], colWidths=[60, 240, 204])
         
         tabela_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
@@ -597,7 +599,7 @@ if "curriculo_gerado" in st.session_state:
 
         tabela_cabecalho = Table([
             [coluna_esquerda_conteudo, parágrafos_contatos]
-        ], colWidths=[265, 234])
+        ], colWidths=[265, 239])
         
         tabela_cabecalho.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
