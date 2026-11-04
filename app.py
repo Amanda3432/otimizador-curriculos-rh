@@ -35,12 +35,12 @@ st.markdown("<h1 style='text-align: left; color: #111111; font-family: sans-seri
 st.markdown("<p style='text-align: left; color: #555555; font-size: 1.1rem; margin-top: 5px; margin-bottom: 25px;'>Ferramenta de Otimização de Currículo para Triagens em ATS do Sala de Emprego</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# --- CONFIGURAÇÃO AUTOMÁTICA DA API ---
+# --- CONFIGURAÇÃO SEGURA DA API (BLINDADA CONTRA TRAVAMENTOS) ---
 try:
     if "GEMINI_API_KEY" in st.secrets:
         ativa_api_key = st.secrets["GEMINI_API_KEY"]
     else:
-        ativa_api_key = ""
+        ativa_api_key = os.getenv("GEMINI_API_KEY", "")
 except Exception:
     ativa_api_key = ""
 
@@ -395,7 +395,6 @@ if "curriculo_gerado" in st.session_state:
         r_tit.font.bold = True
         r_tit.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Construção do cabeçalho Word conforme o modelo escolhido
     table_header = doc.add_table(rows=1, cols=2)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.autofit = False
@@ -553,7 +552,6 @@ if "curriculo_gerado" in st.session_state:
 
     story = []
 
-    # ESTRUTURA DE CABEÇALHO PARA PDF (COM OU SEM FOTO)
     if modelo_escolhido == "Modelo Com Foto" and foto_arquivo is not None:
         temp_foto_path = "temp_foto.png"
         with open(temp_foto_path, "wb") as f:
@@ -655,7 +653,9 @@ if "curriculo_gerado" in st.session_state:
         add_secao_pdf("Experiência Profissional")
         blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
         for bloco in blocos_exp:
-            linhas_bloco = [l.strip() for l in bloco.split("\n") if l.strip()]
+            linhas_bloco = [l.string if hasattr(l, 'string') else l.strip() for l in bloco.split("\n") if l.strip()]
+            # Correção de robustez para list comprehension de strings
+            linhas_bloco = [str(l).strip() for l in bloco.split("\n") if str(l).strip()]
             if not linhas_bloco:
                 continue
 
@@ -675,7 +675,7 @@ if "curriculo_gerado" in st.session_state:
             story.append(KeepTogether(elementos_cargo))
 
             for item in linhas_bloco[2:]:
-                item_limpo = item.lstrip("-•* ").strip()
+                item_limpo = str(item).lstrip("-•* ").strip()
                 story.append(Paragraph(texto_para_pdf(f"• {item_limpo}"), estilo_texto))
             story.append(Spacer(1, 0.5))
 
@@ -733,7 +733,8 @@ if "curriculo_gerado" in st.session_state:
             file_name="curriculo_otimizado.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             type="primary",
-            use_container_width=True
+            use_container_width=True,
+            key="btn_download_word"
         )
     with col_d2:
         st.download_button(
@@ -742,5 +743,6 @@ if "curriculo_gerado" in st.session_state:
             file_name="curriculo_otimizado.pdf",
             mime="application/pdf",
             type="primary",
-            use_container_width=True
+            use_container_width=True,
+            key="btn_download_pdf"
         )
