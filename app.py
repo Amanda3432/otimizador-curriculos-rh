@@ -741,7 +741,7 @@ with col_d1:
             use_container_width=True,
             key="btn_download_word"
         )
-    with col_d2:
+with col_d2:
         st.download_button(
             label=f"📥 Baixar em PDF ({modelo_escolhido})",
             data=buffer_pdf,
