@@ -683,7 +683,7 @@ if "curriculo_gerado" in st.session_state:
             elementos_bloco_cargo.append(Spacer(1, 5))
             story.append(KeepTogether(elementos_bloco_cargo))
 
-if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt
         add_secao_pdf("Trabalho Voluntário")
         story.append(Paragraph(texto_para_pdf(voluntariado_txt).replace('\n', '<br/>'), estilo_texto))
 
