@@ -517,7 +517,7 @@ if "curriculo_gerado" in st.session_state:
     if secao_tem_conteudo(experiencia_txt):
         add_secao_com_linha_word(doc, "Experiência Profissional")
         blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
-        for bloco in blocos_exp:
+        for idx_b, bloco in enumerate(blocos_exp):
             linhas_bloco = [str(l).strip() for l in bloco.split("\n") if str(l).strip()]
             if not linhas_bloco:
                 continue
@@ -525,9 +525,12 @@ if "curriculo_gerado" in st.session_state:
             add_p_word(doc, text=empresa_periodo, font_size=11, space_after=1)
             if len(linhas_bloco) > 1:
                 add_p_word(doc, text=linhas_bloco[1], font_size=11, is_bold=True, space_after=1)
-            for item in linhas_bloco[2:]:
+            
+            total_itens = len(linhas_bloco[2:])
+            for idx_item, item in enumerate(linhas_bloco[2:]):
                 item_limpo = str(item).lstrip('-•* ').strip()
-                add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=1.5)
+                espaco_item = 6.0 if idx_item == total_itens - 1 else 1.5
+                add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=espaco_item)
 
     if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
         add_secao_com_linha_word(doc, "Trabalho Voluntário")
@@ -678,8 +681,8 @@ if "curriculo_gerado" in st.session_state:
                 elementos_bloco_cargo.append(Paragraph(texto_para_pdf(f"• {item_limpo}"), estilo_texto))
             
             # Envolve cada experiência em KeepTogether para evitar cortes secos entre páginas
-            story.append(KeepTogether(elementos_bloco_cargo))
-            story.append(Spacer(1, 1))
+            elementos_bloco_cargo.append(Spacer(1, 5))
+story.append(KeepTogether(elementos_bloco_cargo))
 
     if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
         add_secao_pdf("Trabalho Voluntário")
