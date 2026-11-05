@@ -716,7 +716,7 @@ if conversor_office:
         except Exception:
             paginas_word = None
 
-    if os.path.exists("temp_foto.png"):
+if os.path.exists("temp_foto.png"):
         os.remove("temp_foto.png")
 
     if paginas_pdf > 2 or (paginas_word is not None and paginas_word > 2):
