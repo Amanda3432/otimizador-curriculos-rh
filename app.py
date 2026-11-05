@@ -256,7 +256,11 @@ if gerar_btn:
                 2. [FORMAÇÃO ACADÊMICA]: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações. NUNCA inclua ensino médio se houver nível técnico ou superior. NÃO coloque carga horária nem a palavra "concluído".
                 3. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo até 3 realizações de impacto em tópicos com hífen (-).
                 4. [EXPERIÊNCIA PROFISSIONAL]: Liste até as 5 experiências mais recentes, em ordem cronológica da mais recente para a mais antiga. Omita experiências muito curtas que não sejam temporárias.
-
+                5. [DEDUPLICAÇÃO DE RESULTADOS]: 
+                   - Os resultados quantitativos, métricas, porcentagens e realizações de alto impacto DEVEM ser inseridos EXCLUSIVAMENTE na seção [PROJETOS E RESULTADOS].
+                   - É RIGOROSAMENTE PROIBIDO repetir esses mesmos números, porcentagens ou conquistas dentro das descrições da seção [EXPERIÊNCIA PROFISSIONAL].
+                   - Nas experiências profissionais, foque apenas no escopo das responsabilidades, atribuições operacionais, gestão de rotinas e metodologias aplicadas no dia a dia.
+               
                 Preencha as tags em maiúsculas (omita tags se a seção não existir no original):
 
                 [NOME]
