@@ -697,7 +697,7 @@ buffer_pdf.seek(0)
 
 paginas_word = None
 conversor_office = shutil.which("libreoffice") or shutil.which("soffice")
-    if conversor_office:
+if conversor_office:
         try:
             with tempfile.TemporaryDirectory() as pasta_validacao:
                 caminho_docx = os.path.join(pasta_validacao, "curriculo_validacao.docx")
