@@ -558,7 +558,6 @@ if "curriculo_gerado" in st.session_state:
     
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11.5, leading=13.5, textColor=cor_total, spaceBefore=4, spaceAfter=1.5, fontName="Times-Bold", keepWithNext=True)
     
-    # ATUALIZADO PARA TAMANHO 11PT CONFORME SOLICITADO
     estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.2, alignment=4)
     estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.2, alignment=4)
     estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5, keepWithNext=True)
@@ -661,33 +660,61 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = h_line.lstrip('-•* ').strip()
                 story.append(Paragraph(f"• {texto_para_pdf(item_limpo)}", estilo_texto))
 
+    # --- SEÇÃO DE EXPERIÊNCIA PROFISSIONAL COM TÍTULO E 1º BLOCO UNIDOS (EVITA TÍTULO ÓRFÃO) ---
     if secao_tem_conteudo(experiencia_txt):
-        add_secao_pdf("Experiência Profissional")
         blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
-        for bloco in blocos_exp:
-            linhas_bloco = [str(l).strip() for l in bloco.split("\n") if str(l).strip()]
-            if not linhas_bloco:
-                continue
-
-            empresa_periodo = linhas_bloco[0]
-            if "|" in empresa_periodo:
-                partes_emp = empresa_periodo.split("|", 1)
-                nome_emp = texto_para_pdf(partes_emp[0].strip())
-                resto_emp = texto_para_pdf(partes_emp[1].strip())
-                empresa_formatada = f"<b><i>{nome_emp}</i></b> | {resto_emp}"
-            else:
-                empresa_formatada = f"<b><i>{texto_para_pdf(empresa_periodo)}</i></b>"
-
-            elementos_bloco_cargo = [Paragraph(empresa_formatada, estilo_exp_empresa)]
-            if len(linhas_bloco) > 1:
-                elementos_bloco_cargo.append(Paragraph(texto_para_pdf(linhas_bloco[1]), estilo_exp_cargo))
-
-            for item in linhas_bloco[2:]:
-                item_limpo = str(item).lstrip("-•* ").strip()
-                elementos_bloco_cargo.append(Paragraph(texto_para_pdf(f"• {item_limpo}"), estilo_texto))
+        if blocos_exp:
+            hr_exp = HRFlowable(width="100%", thickness=0.8, color=cor_total, spaceAfter=2, spaceBefore=4)
+            titulo_exp = Paragraph(f"<b>{texto_para_pdf('Experiência Profissional')}</b>", estilo_titulo_secao)
             
-            elementos_bloco_cargo.append(Spacer(1, 5))
-            story.append(KeepTogether(elementos_bloco_cargo))
+            bloco_inicial = blocos_exp[0]
+            linhas_inicial = [str(l).strip() for l in bloco_inicial.split("\n") if str(l).strip()]
+            
+            elementos_primeiro_bloco = [hr_exp, titulo_exp]
+            if linhas_inicial:
+                empresa_periodo = linhas_inicial[0]
+                if "|" in empresa_periodo:
+                    partes_emp = empresa_periodo.split("|", 1)
+                    nome_emp = texto_para_pdf(partes_emp[0].strip())
+                    resto_emp = texto_para_pdf(partes_emp[1].strip())
+                    empresa_formatada = f"<b><i>{nome_emp}</i></b> | {resto_emp}"
+                else:
+                    empresa_formatada = f"<b><i>{texto_para_pdf(empresa_periodo)}</i></b>"
+                
+                elementos_primeiro_bloco.append(Paragraph(empresa_formatada, estilo_exp_empresa))
+                if len(linhas_inicial) > 1:
+                    elementos_primeiro_bloco.append(Paragraph(texto_para_pdf(linhas_inicial[1]), estilo_exp_cargo))
+                for item in linhas_inicial[2:]:
+                    item_limpo = str(item).lstrip("-•* ").strip()
+                    elementos_primeiro_bloco.append(Paragraph(texto_para_pdf(f"• {item_limpo}"), estilo_texto))
+            
+            elementos_primeiro_bloco.append(Spacer(1, 5))
+            story.append(KeepTogether(elementos_primeiro_bloco))
+            
+            for bloco in blocos_exp[1:]:
+                linhas_bloco = [str(l).strip() for l in bloco.split("\n") if str(l).strip()]
+                if not linhas_bloco:
+                    continue
+
+                empresa_periodo = linhas_bloco[0]
+                if "|" in empresa_periodo:
+                    partes_emp = empresa_periodo.split("|", 1)
+                    nome_emp = texto_para_pdf(partes_emp[0].strip())
+                    resto_emp = texto_para_pdf(partes_emp[1].strip())
+                    empresa_formatada = f"<b><i>{nome_emp}</i></b> | {resto_emp}"
+                else:
+                    empresa_formatada = f"<b><i>{texto_para_pdf(empresa_periodo)}</i></b>"
+
+                elementos_bloco_cargo = [Paragraph(empresa_formatada, estilo_exp_empresa)]
+                if len(linhas_bloco) > 1:
+                    elementos_bloco_cargo.append(Paragraph(texto_para_pdf(linhas_bloco[1]), estilo_exp_cargo))
+
+                for item in linhas_bloco[2:]:
+                    item_limpo = str(item).lstrip("-•* ").strip()
+                    elementos_bloco_cargo.append(Paragraph(texto_para_pdf(f"• {item_limpo}"), estilo_texto))
+                
+                elementos_bloco_cargo.append(Spacer(1, 5))
+                story.append(KeepTogether(elementos_bloco_cargo))
 
     if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
         add_secao_pdf("Trabalho Voluntário")
