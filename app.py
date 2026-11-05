@@ -719,14 +719,14 @@ if conversor_office:
 if os.path.exists("temp_foto.png"):
         os.remove("temp_foto.png")
 
-    if paginas_pdf > 2 or (paginas_word is not None and paginas_word > 2):
+if paginas_pdf > 2 or (paginas_word is not None and paginas_word > 2):
         st.error(
             f"O currículo ultrapassou o limite de 2 páginas "
             f"(PDF: {paginas_pdf} página(s); Word: {paginas_word if paginas_word is not None else 'não validado'}). "
             "A ferramenta tentará otimizar novamente para ajustar ao limite rígido de 2 páginas."
         )
         st.stop()
-    else:
+else:
         st.success(f"Paginação validada com sucesso! Currículo ajustado com perfeição em {paginas_pdf} página(s).")
 
     # --- BOTÕES DE DOWNLOAD ---
