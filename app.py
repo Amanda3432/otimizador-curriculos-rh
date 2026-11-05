@@ -693,7 +693,7 @@ buffer_pdf.seek(0)
 
     # Validação segura de páginas
 paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
-    buffer_pdf.seek(0)
+buffer_pdf.seek(0)
 
     paginas_word = None
     conversor_office = shutil.which("libreoffice") or shutil.which("soffice")
