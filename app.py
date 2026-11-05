@@ -730,7 +730,7 @@ else:
         st.success(f"Paginação validada com sucesso! Currículo ajustado com perfeição em {paginas_pdf} página(s).")
 
     # --- BOTÕES DE DOWNLOAD ---
-    col_d1, col_d2 = st.columns(2)
+col_d1, col_d2 = st.columns(2)
     with col_d1:
         st.download_button(
             label=f"📥 Baixar em Word ({modelo_escolhido})",
