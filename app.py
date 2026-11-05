@@ -688,8 +688,8 @@ if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in volu
         add_secao_pdf("Trabalho Voluntário")
         story.append(Paragraph(texto_para_pdf(voluntariado_txt).replace('\n', '<br/>'), estilo_texto))
 
-    pdf_doc.build(story)
-    buffer_pdf.seek(0)
+pdf_doc.build(story)
+buffer_pdf.seek(0)
 
     # Validação segura de páginas
     paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
