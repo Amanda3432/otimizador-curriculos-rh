@@ -692,7 +692,7 @@ pdf_doc.build(story)
 buffer_pdf.seek(0)
 
     # Validação segura de páginas
-    paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
+paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
     buffer_pdf.seek(0)
 
     paginas_word = None
