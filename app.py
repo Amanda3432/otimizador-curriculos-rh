@@ -553,10 +553,12 @@ if "curriculo_gerado" in st.session_state:
     estilo_cargo = ParagraphStyle('CargoEstilo', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Italic", spaceAfter=0)
     
     estilo_titulo_secao = ParagraphStyle('SecaoEstilo', parent=styles['Heading2'], fontSize=11.5, leading=13.5, textColor=cor_total, spaceBefore=4, spaceAfter=1.5, fontName="Times-Bold", keepWithNext=True)
-    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=10.5, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.2, alignment=4)
-    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=10.5, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.2, alignment=4)
-    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5, keepWithNext=True)
-    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=10.5, leading=12, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5, keepWithNext=True)
+    
+    # ATUALIZADO PARA TAMANHO 11PT CONFORME SOLICITADO
+    estilo_texto = ParagraphStyle('TextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.2, alignment=4)
+    estilo_perfil_texto = ParagraphStyle('PerfilTextoEstilo', parent=styles['Normal'], fontSize=11, leading=14, textColor=cor_total, fontName="Times-Roman", spaceAfter=1.2, alignment=4)
+    estilo_exp_empresa = ParagraphStyle('EmpresaExpEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Roman", spaceAfter=0.5, keepWithNext=True)
+    estilo_exp_cargo = ParagraphStyle('CargoExpEstilo', parent=styles['Normal'], fontSize=11, leading=13, textColor=cor_total, fontName="Times-Bold", spaceAfter=0.5, keepWithNext=True)
 
     story = []
 
@@ -683,54 +685,48 @@ if "curriculo_gerado" in st.session_state:
             elementos_bloco_cargo.append(Spacer(1, 5))
             story.append(KeepTogether(elementos_bloco_cargo))
 
-if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+    if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
         add_secao_pdf("Trabalho Voluntário")
         story.append(Paragraph(texto_para_pdf(voluntariado_txt).replace('\n', '<br/>'), estilo_texto))
 
-pdf_doc.build(story)
-buffer_pdf.seek(0)
+    pdf_doc.build(story)
+    buffer_pdf.seek(0)
 
     # Validação segura de páginas
-paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
-buffer_pdf.seek(0)
+    paginas_pdf = len(pypdf.PdfReader(buffer_pdf).pages)
+    buffer_pdf.seek(0)
 
-paginas_word = None
-conversor_office = shutil.which("libreoffice") or shutil.which("soffice")
-if conversor_office:
+    paginas_word = None
+    conversor_office = shutil.which("libreoffice") or shutil.which("soffice")
+    if conversor_office:
         try:
             with tempfile.TemporaryDirectory() as pasta_validacao:
                 caminho_docx = os.path.join(pasta_validacao, "curriculo_validacao.docx")
                 with open(caminho_docx, "wb") as arquivo_temp:
                     buffer_word.seek(0)
                     arquivo_temp.write(buffer_word.read())
-                buffer_word.seek(0)
-                subprocess.run(
-                    [conversor_office, "--headless", f"-env:UserInstallation=file://{pasta_validacao}/lo_profile",
-                     "--convert-to", "pdf", "--outdir", pasta_validacao, caminho_docx],
-                    check=True, capture_output=True, timeout=5
-                )
-                caminho_pdf_word = os.path.join(pasta_validacao, "curriculo_validacao.pdf")
-                if os.path.exists(caminho_pdf_word):
-                    paginas_word = len(pypdf.PdfReader(caminho_pdf_word).pages)
+                
+                caminho_pdf_convertido = os.path.join(pasta_validacao, "curriculo_validacao.pdf")
+                subprocess.run([conversor_office, "--headless", "--convert-to", "pdf", "--outdir", pasta_validacao, caminho_docx], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                if os.path.exists(caminho_pdf_convertido):
+                    paginas_word = len(pypdf.PdfReader(caminho_pdf_convertido).pages)
         except Exception:
-            paginas_word = None
+            pass
 
-if os.path.exists("temp_foto.png"):
-        os.remove("temp_foto.png")
-
-if paginas_pdf > 2 or (paginas_word is not None and paginas_word > 2):
+    if paginas_pdf > 2 or (paginas_word is not None and paginas_word > 2):
         st.error(
             f"O currículo ultrapassou o limite de 2 páginas "
             f"(PDF: {paginas_pdf} página(s); Word: {paginas_word if paginas_word is not None else 'não validado'}). "
             "A ferramenta tentará otimizar novamente para ajustar ao limite rígido de 2 páginas."
         )
         st.stop()
-else:
+    else:
         st.success(f"Paginação validada com sucesso! Currículo ajustado com perfeição em {paginas_pdf} página(s).")
 
     # --- BOTÕES DE DOWNLOAD ---
-col_d1, col_d2 = st.columns(2)
-with col_d1:
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
         st.download_button(
             label=f"📥 Baixar em Word ({modelo_escolhido})",
             data=buffer_word,
@@ -740,7 +736,7 @@ with col_d1:
             use_container_width=True,
             key="btn_download_word"
         )
-with col_d2:
+    with col_d2:
         st.download_button(
             label=f"📥 Baixar em PDF ({modelo_escolhido})",
             data=buffer_pdf,
