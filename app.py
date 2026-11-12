@@ -21,15 +21,7 @@ import tempfile
 import urllib.request
 import urllib.parse
 import json
-import tempfile
-import vertexai
-from vertexai.generative_models import GenerativeModel
-
-# Inicializa explicitamente o projeto e a região
-vertexai.init(project="gen-lang-client-0106797164", location="us-central1")
-
-# Instancia o modelo de forma limpa
-model = GenerativeModel("gemini-1.5-flash")
+from google.oauth2 import service_account
 from html.parser import HTMLParser
 from xml.sax.saxutils import escape
 
@@ -44,15 +36,6 @@ st.set_page_config(
 st.markdown("<h1 style='text-align: left; color: #111111; font-family: sans-serif; font-size: 2.2rem; margin-bottom: 0px;'>Sala de Emprego — Otimizador de Currículos</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: left; color: #555555; font-size: 1.1rem; margin-top: 5px; margin-bottom: 25px;'>Ferramenta de Otimização de Currículo para Triagens em ATS do Sala de Emprego</p>", unsafe_allow_html=True)
 st.markdown("---")
-
-# --- CONFIGURAÇÃO SEGURA DA API ---
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        ativa_api_key = st.secrets["GEMINI_API_KEY"]
-    else:
-        ativa_api_key = os.getenv("GEMINI_API_KEY", "")
-except Exception:
-    ativa_api_key = ""
 
 # --- FUNÇÃO DE SEGURANÇA: SANITIZAÇÃO DE TEXTO CONTRA PROMPT INJECTION ---
 def sanitizar_texto_entrada(texto):
@@ -205,27 +188,31 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# --- CHAMADA À API COM OS MODELOS ---
+# --- CHAMADA À API COM VERTEX AI (SDK GOOGLE-GENAI) ---
 def chamar_gemini_com_retry(client, prompt_texto):
-    # Chamada direta e única usando o modelo estável da Vertex AI
-    model = GenerativeModel("gemini-1.5-flash")
-    resposta = model.generate_content(prompt_texto)
-    return resposta.text
-    
-    for modelo in modelos_para_tentar:
-        try:
-            response = client.models.generate_content(
-                model=modelo,
-                contents=prompt_texto,
-            )
-            if response and response.text:
-                return response.text
-        except Exception as e:
-            erros_acumulados.append(f"[{modelo}] {str(e)}")
-            time.sleep(2)
-            continue
-                
-    raise Exception(f"Todos os modelos testados falharam: {erros_acumulados}")
+    modelos_disponiveis = ["gemini-2.5-flash", "gemini-2.0-flash"]
+    erros_acumulados = []
+
+    for modelo in modelos_disponiveis:
+        for tentativa in range(2):
+            try:
+                response = client.models.generate_content(
+                    model=modelo,
+                    contents=prompt_texto,
+                )
+                if response and getattr(response, "text", None) and response.text.strip():
+                    return response.text
+                raise ValueError("A resposta retornada pelo modelo veio vazia.")
+            except Exception as e:
+                erro_str = str(e)
+                erros_acumulados.append(f"[{modelo} - tentativa {tentativa + 1}] {erro_str}")
+                # Repete apenas para erros temporários (rate limit / indisponibilidade)
+                if any(cod in erro_str for cod in ("429", "503", "500", "RESOURCE_EXHAUSTED", "UNAVAILABLE")):
+                    time.sleep(2 * (tentativa + 1))
+                    continue
+                break
+
+    raise Exception(f"Não foi possível gerar o currículo com os modelos da Vertex AI: {' | '.join(erros_acumulados)}")
 
 if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
@@ -233,19 +220,19 @@ if gerar_btn:
     else:
         with st.spinner("Analisando perfil, validando requisitos de ATS e sintetizando o currículo corporativo..."):
             try:
-                # Carrega a conta de serviço dos segredos e inicializa o Vertex AI
+                # Carrega a conta de serviço diretamente em memória (sem gravar arquivo no disco)
                 service_account_info = dict(st.secrets["gcp_service_account"])
-                with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp:
-                    json.dump(service_account_info, temp)
-                    temp_path = temp.name
-        
-                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
-        
+                credentials = service_account.Credentials.from_service_account_info(
+                    service_account_info,
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"],
+                )
+
                 client = genai.Client(
                     vertexai=True,
+                    credentials=credentials,
                     project="gen-lang-client-0106797164",
-                    location="us-central1"
-        )
+                    location="us-central1",
+                )
                 
                 cv_sanitizado = sanitizar_texto_entrada(curriculo_antigo)
                 vaga_sanitizada = sanitizar_texto_entrada(descricao_vaga)
