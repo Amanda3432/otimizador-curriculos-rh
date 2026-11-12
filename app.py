@@ -13,7 +13,7 @@ from google import genai
 import time
 import io
 import os
-re
+import re
 import pypdf
 import shutil
 import subprocess
