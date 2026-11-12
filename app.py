@@ -529,6 +529,12 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = h_line.lstrip('-•* ').strip()
                 add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=1.5)
 
+    if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+        add_secao_com_linha_word(doc, "Trabalho Voluntário")
+        for v_line in voluntariado_txt.split('\n'):
+            if v_line.strip():
+                add_p_word(doc, text=v_line.strip(), font_size=11, space_after=1.5)
+
     if secao_tem_conteudo(experiencia_txt):
         add_secao_com_linha_word(doc, "Experiência Profissional")
         blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
@@ -546,12 +552,6 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = str(item).lstrip('-•* ').strip()
                 espaco_item = 6.0 if idx_item == total_itens - 1 else 1.5
                 add_p_word(doc, text=f"• {item_limpo}", font_size=11, space_after=espaco_item)
-
-    if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        add_secao_com_linha_word(doc, "Trabalho Voluntário")
-        for v_line in voluntariado_txt.split('\n'):
-            if v_line.strip():
-                add_p_word(doc, text=v_line.strip(), font_size=11, space_after=1.5)
 
     buffer_word = io.BytesIO()
     doc.save(buffer_word)
@@ -671,6 +671,10 @@ if "curriculo_gerado" in st.session_state:
                 item_limpo = h_line.lstrip('-•* ').strip()
                 story.append(Paragraph(f"• {texto_para_pdf(item_limpo)}", estilo_texto))
 
+    if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
+        add_secao_pdf("Trabalho Voluntário")
+        story.append(Paragraph(texto_para_pdf(voluntariado_txt).replace('\n', '<br/>'), estilo_texto))
+
     # --- SEÇÃO DE EXPERIÊNCIA PROFISSIONAL COM TÍTULO E 1º BLOCO UNIDOS (EVITA TÍTULO ÓRFÃO) ---
     if secao_tem_conteudo(experiencia_txt):
         blocos_exp = [b for b in experiencia_txt.split("\n\n") if b.strip()]
@@ -726,10 +730,6 @@ if "curriculo_gerado" in st.session_state:
                 
                 elementos_bloco_cargo.append(Spacer(1, 5))
                 story.append(KeepTogether(elementos_bloco_cargo))
-
-    if secao_tem_conteudo(voluntariado_txt) and "[TRABALHO VOLUNTÁRIO]" not in voluntariado_txt:
-        add_secao_pdf("Trabalho Voluntário")
-        story.append(Paragraph(texto_para_pdf(voluntariado_txt).replace('\n', '<br/>'), estilo_texto))
 
     pdf_doc.build(story)
     buffer_pdf.seek(0)
