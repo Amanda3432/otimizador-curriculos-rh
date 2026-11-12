@@ -25,8 +25,11 @@ import tempfile
 import vertexai
 from vertexai.generative_models import GenerativeModel
 
-# Inicializa a conexão com a Vertex AI na região correta
+# Inicializa explicitamente o projeto e a região
 vertexai.init(project="gen-lang-client-0106797164", location="us-central1")
+
+# Instancia o modelo de forma limpa
+model = GenerativeModel("gemini-1.5-flash")
 from html.parser import HTMLParser
 from xml.sax.saxutils import escape
 
