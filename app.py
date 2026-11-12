@@ -221,7 +221,10 @@ if gerar_btn:
     else:
         with st.spinner("Analisando perfil, validando requisitos de ATS e sintetizando o currículo corporativo..."):
             try:
-                client = genai.Client(api_key=ativa_api_key)
+                client = genai.Client(api_key=ativa_api_key,
+    vertexai=True,
+    project="gen-lang-client-0106797164",
+    location="us-central1")
                 
                 cv_sanitizado = sanitizar_texto_entrada(curriculo_antigo)
                 vaga_sanitizada = sanitizar_texto_entrada(descricao_vaga)
