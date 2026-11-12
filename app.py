@@ -190,7 +190,7 @@ with col2:
 
 # --- CHAMADA À API COM VERTEX AI (SDK GOOGLE-GENAI) ---
 def chamar_gemini_com_retry(client, prompt_texto):
-    modelos_disponiveis = ["gemini-2.5-flash", "gemini-2.0-flash"]
+    modelos_disponiveis = ["gemini-3.8-flash", "gemini-2.5-flash"]
     erros_acumulados = []
 
     for modelo in modelos_disponiveis:
@@ -206,7 +206,6 @@ def chamar_gemini_com_retry(client, prompt_texto):
             except Exception as e:
                 erro_str = str(e)
                 erros_acumulados.append(f"[{modelo} - tentativa {tentativa + 1}] {erro_str}")
-                # Repete apenas para erros temporários (rate limit / indisponibilidade)
                 if any(cod in erro_str for cod in ("429", "503", "500", "RESOURCE_EXHAUSTED", "UNAVAILABLE")):
                     time.sleep(2 * (tentativa + 1))
                     continue
@@ -228,10 +227,10 @@ if gerar_btn:
                 )
 
                 client = genai.Client(
-                    vertexai=True,
+                    enterprise=True,
                     credentials=credentials,
                     project="gen-lang-client-0106797164",
-                    location="us-central1",
+                    location="global",
                 )
                 
                 cv_sanitizado = sanitizar_texto_entrada(curriculo_antigo)
