@@ -13,13 +13,15 @@ from google import genai
 import time
 import io
 import os
-import re
+ re
 import pypdf
 import shutil
 import subprocess
 import tempfile
 import urllib.request
 import urllib.parse
+import json
+import tempfile
 from html.parser import HTMLParser
 from xml.sax.saxutils import escape
 
@@ -221,7 +223,19 @@ if gerar_btn:
     else:
         with st.spinner("Analisando perfil, validando requisitos de ATS e sintetizando o currículo corporativo..."):
             try:
-                client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+                # Carrega a conta de serviço dos segredos e inicializa o Vertex AI
+        service_account_info = dict(st.secrets["gcp_service_account"])
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp:
+            json.dump(service_account_info, temp)
+            temp_path = temp.name
+        
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
+        
+        client = genai.Client(
+            vertexai=True,
+            project="gen-lang-client-0106797164",
+            location="us-central1"
+        )
                 
                 cv_sanitizado = sanitizar_texto_entrada(curriculo_antigo)
                 vaga_sanitizada = sanitizar_texto_entrada(descricao_vaga)
