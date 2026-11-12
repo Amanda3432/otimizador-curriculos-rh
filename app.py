@@ -9,7 +9,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, HRFlowable, KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from google import genai
+import vertexai
+from vertexai.generative_models import GenerativeModel
 import time
 import io
 import os
@@ -43,6 +44,16 @@ try:
         ativa_api_key = os.getenv("GEMINI_API_KEY", "")
 except Exception:
     ativa_api_key = ""
+
+# --- INICIALIZAÇÃO DA VERTEX AI ---
+# Configura as credenciais de ambiente e inicializa o SDK oficial da Vertex AI no Google Cloud
+if ativa_api_key:
+    os.environ["GEMINI_API_KEY"] = ativa_api_key
+
+try:
+    vertexai.init(project="gen-lang-client-0106797164", location="us-central1")
+except Exception as e:
+    pass
 
 # --- FUNÇÃO DE SEGURANÇA: SANITIZAÇÃO DE TEXTO CONTRA PROMPT INJECTION ---
 def sanitizar_texto_entrada(texto):
@@ -195,18 +206,17 @@ with col2:
     
     gerar_btn = st.button("🚀 Otimizar Currículo Agora", type="primary", use_container_width=True)
 
-# --- CHAMADA À API COM OS MODELOS ---
-def chamar_gemini_com_retry(client, prompt_texto):
-    # Modelos oficiais e estáveis na Vertex AI
-    modelos_para_tentar = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-exp']
+# --- CHAMADA À API USANDO O SDK DA VERTEX AI ---
+def chamar_gemini_com_retry(prompt_texto):
+    modelos_para_tentar = ['gemini-1.5-flash', 'gemini-1.5-pro']
     erros_acumulados = []
     
     for modelo in modelos_para_tentar:
         try:
-            response = client.models.generate_content(
-                model=modelo,
-                contents=prompt_texto,
-            )
+            # Instancia o modelo diretamente pelo SDK corporativo da Vertex AI
+            generative_model = GenerativeModel(modelo)
+            response = generative_model.generate_content(prompt_texto)
+            
             if response and response.text:
                 return response.text
         except Exception as e:
@@ -214,19 +224,14 @@ def chamar_gemini_com_retry(client, prompt_texto):
             time.sleep(2)
             continue
                 
-    raise Exception(f"Todos os modelos testados falharam: {erros_acumulados}")
+    raise Exception(f"Todos os modelos da Vertex falharam: {erros_acumulados}")
 
 if gerar_btn:
     if not curriculo_antigo.strip() or not descricao_vaga.strip():
         st.warning("⚠️ Por favor, forneça o currículo do cliente e os dados/link da vaga.")
     else:
-        with st.spinner("Analisando perfil, validando requisitos de ATS e sintetizando o currículo corporativo..."):
+        with st.spinner("Analisando perfil, validando requisitos de ATS e sintetizando o currículo corporativo via Vertex AI..."):
             try:
-                client = genai.Client(api_key=ativa_api_key,
-    vertexai=True,
-    project="gen-lang-client-0106797164",
-    location="us-central1")
-                
                 cv_sanitizado = sanitizar_texto_entrada(curriculo_antigo)
                 vaga_sanitizada = sanitizar_texto_entrada(descricao_vaga)
                 cargo_alvo_sanitizado = sanitizar_texto_entrada(cargo_alvo_especifico)
@@ -317,7 +322,7 @@ if gerar_btn:
                 {vaga_sanitizada}
                 """
                 
-                resultado_ia = chamar_gemini_com_retry(client, prompt_sistema)
+                resultado_ia = chamar_gemini_com_retry(prompt_sistema)
                 st.session_state["curriculo_gerado"] = resultado_ia
                 st.success("✨ Currículo otimizado com sucesso e estruturado no padrão correto!")
                 
