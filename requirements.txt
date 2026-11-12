@@ -1,5 +1,5 @@
 streamlit
-google-genai
-python-docx
+docx
 reportlab
 pypdf
+google-cloud-aiplatform
