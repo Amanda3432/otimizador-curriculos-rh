@@ -241,25 +241,26 @@ if gerar_btn:
                 
                 Você é um consultor especialista em RH e sistemas ATS da Sala de Emprego. OTIMIZE e SINTETIZE o currículo antigo do candidato com base estritamente nos dados verídicos dele, direcionando-o para a vaga descrita.
                 
+                DIRETRIZES CRÍTICAS DE QUALIDADE E EVITAÇÃO DE REPETIÇÕES (ORIENTAÇÃO DA SUPERVISÃO):
+                1. ZERO REPETIÇÃO DE CONTEÚDO: Elimine redundâncias entre as seções. Informações já citadas no Resumo Profissional, Formação Acadêmica ou Projetos NÃO devem ser repetidas nas descrições de Experiência Profissional ou vice-versa. Cada seção possui um propósito único.
+                2. TRANSIÇÃO DE CARREIRA: Se o candidato estiver fazendo transição de carreira (ex: mudança para área comercial, farmacêutica, administrativa, etc.), valorize estrategicamente as competências transferíveis no Resumo Profissional, conectando o histórico anterior ao novo objetivo da vaga sem parecer desconexo.
+                3. FORMAÇÃO ACADÊMICA RIGOROSA: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações. Certifique-se de explicitar graduações relevantes (como Administração de Empresas) sem duplicar informações com o histórico corporativo.
+                4. DEDUPLICAÇÃO DE RESULTADOS: Métricas, porcentagens e realizações quantitativas de alto impacto pertencem EXCLUSIVAMENTE à seção [PROJETOS E RESULTADOS]. É terminantemente proibido repetir esses mesmos números na seção de [EXPERIÊNCIA PROFISSIONAL], onde o foco deve ser estritamente o escopo de responsabilidades e rotinas diárias.
+                
                 RESTRIÇÃO ABSOLUTA E INEGOCIÁVEL DE TAMANHO (EXATAMENTE NO MÁXIMO 2 PÁGINAS): 
                 O texto gerado DEVE caber perfeitamente em no máximo 2 páginas impressas. 
                 - SE O CURRÍCULO FOR EXTENSO: Selecione e inclua rigorosamente até as **5 experiências profissionais mais atuais**, ajustando a descrição das atividades para que caibam perfeitamente no limite de 2 páginas. Se o histórico for curto e couber tudo, inclua todas as experiências.
                 - Mantenha no máximo 3 marcadores (bullet points) por cargo.
 
-                REGRAS RÍGIDAS DE FORMATAÇÃO E CONTEÚDO:
+                REGRAS DE FORMATAÇÃO E CONTEÚDO:
                 1. [PERFIL PROFISSIONAL]: Escreva exatamente em TRÊS (3) parágrafos curtos e objetivos seguindo a estrutura:
                    - 1° parágrafo: Profissional atuante há mais de X anos na área [cargo/objetivo], destacando-se pela capacidade [competências comportamentais], garantindo que [benefício para a empresa].
                    - 2° parágrafo: Expertises em [atividades-chave/palavras-chave mais recorrentes das vagas].
                    - 3° parágrafo: Conhecimentos em [sistemas e conceitos teóricos].
                    - REGRA DE TEMPO DE EXPERIÊNCIA: Se o profissional tiver mais de 4 anos de experiência na área, inicie obrigatoriamente o primeiro parágrafo declarando a quantidade exata de anos. Se tiver 4 anos ou menos, inicie informando diretamente a atuação sem citar números exatos.
                    - PROIBIDO o uso de palavras genéricas ou clichês vazios ("sólida atuação", "ampla experiência").
-                2. [FORMAÇÃO ACADÊMICA]: NUNCA inclua a palavra "Curso" antes de cursos técnicos (escreva apenas "Técnico em..."). NUNCA utilize parênteses ao lado de MBAs ou pós-graduações. NUNCA inclua ensino médio se houver nível técnico ou superior. NÃO coloque carga horária nem a palavra "concluído".
-                3. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo até 3 realizações de impacto em tópicos com hífen (-).
-                4. [EXPERIÊNCIA PROFISSIONAL]: Liste até as 5 experiências mais recentes, em ordem cronológica da mais recente para a mais antiga. Omita experiências muito curtas que não sejam temporárias.
-                5. [DEDUPLICAÇÃO DE RESULTADOS]: 
-                   - Os resultados quantitativos, métricas, porcentagens e realizações de alto impacto DEVEM ser inseridos EXCLUSIVAMENTE na seção [PROJETOS E RESULTADOS].
-                   - É RIGOROSAMENTE PROIBIDO repetir esses mesmos números, porcentagens ou conquistas dentro das descrições da seção [EXPERIÊNCIA PROFISSIONAL].
-                   - Nas experiências profissionais, foque apenas no escopo das responsabilidades, atribuições operacionais, gestão de rotinas e metodologias aplicadas no dia a dia.
+                2. [PROJETOS E RESULTADOS]: Seção obrigatória e independente de destaque profissional, contendo até 3 realizações de impacto em tópicos com hífen (-).
+                3. [EXPERIÊNCIA PROFISSIONAL]: Liste até as 5 experiências mais recentes, em ordem cronológica da mais recente para a mais antiga. Omita experiências muito curtas que não sejam temporárias.
                
                 Preencha as tags em maiúsculas (omita tags se a seção não existir no original):
 
@@ -296,14 +297,14 @@ if gerar_btn:
 
                 [HABILIDADES E COMPETÊNCIAS]
                 - [Competência técnica]
-
+                
+                [TRABALHO VOLUNTÁRIO]
+                [Atividade voluntária]
+                
                 [EXPERIÊNCIA PROFISSIONAL]
                 [Empresa real] | [Período real]
                 [Cargo real]
                 - [Atividade relevante]
-
-                [TRABALHO VOLUNTÁRIO]
-                [Atividade voluntária]
 
                 Currículo Antigo:
                 {cv_sanitizado}
