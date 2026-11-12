@@ -224,17 +224,17 @@ if gerar_btn:
         with st.spinner("Analisando perfil, validando requisitos de ATS e sintetizando o currículo corporativo..."):
             try:
                 # Carrega a conta de serviço dos segredos e inicializa o Vertex AI
-        service_account_info = dict(st.secrets["gcp_service_account"])
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp:
-            json.dump(service_account_info, temp)
-            temp_path = temp.name
+                service_account_info = dict(st.secrets["gcp_service_account"])
+                with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp:
+                    json.dump(service_account_info, temp)
+                    temp_path = temp.name
         
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
         
-        client = genai.Client(
-            vertexai=True,
-            project="gen-lang-client-0106797164",
-            location="us-central1"
+                client = genai.Client(
+                    vertexai=True,
+                    project="gen-lang-client-0106797164",
+                    location="us-central1"
         )
                 
                 cv_sanitizado = sanitizar_texto_entrada(curriculo_antigo)
