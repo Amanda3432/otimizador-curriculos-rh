@@ -1,6 +1,6 @@
 streamlit
-google-genai
-google-cloud-aiplatform
+google-genai>=2.20.0,<3.0.0
+google-auth
 python-docx
 reportlab
 pypdf
