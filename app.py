@@ -199,7 +199,7 @@ with col2:
 
 # --- CHAMADA À API COM OS MODELOS ---
 def chamar_gemini_com_retry(client, prompt_texto):
-    modelos_para_tentar = ['gemini-3.8-flash', 'gemini-3.6-flash']
+    modelos_para_tentar = ['gemini-1.5-flash']
     erros_acumulados = []
     
     for modelo in modelos_para_tentar:
